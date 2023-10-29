@@ -1,0 +1,257 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "readyplayerme.texturesynthesis"
+dynamic = ["version"]
+description = "This package provides means to help with texture mapping, like UV seam mitigation."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+keywords = ["ready player me", "gltf", "3D", "texture", "texture mapping", "uv mapping", "uv", "uv seam", "uv border",]
+authors = [
+  { name = "Ready Player Me", email = "info@readyplayer.me" },
+]
+maintainers = [
+  { name = "Daniel-Ionut Rancea", email = "daniel-ionut.rancea@readyplayer.me" },
+  { name = "Olaf Haag", email = "olaf@readyplayer.me" },
+]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Multimedia :: Graphics",
+  "Topic :: Multimedia :: Graphics :: 3D Modeling"
+]
+dependencies = [
+  "trimesh[recommend]>=4.0.1",
+  "pillow",
+  "scipy",
+]
+
+[project.optional-dependencies]
+tests = [
+  "pytest",
+]
+dev = [
+  "readyplayerme.texturesynthesis[tests]",
+  "pre-commit",
+]
+
+[project.urls]
+Documentation = "https://github.com/readyplayerme/texturesynthesis#readme"
+Issues = "https://github.com/readyplayerme/texturesynthesis/issues"
+Source = "https://github.com/readyplayerme/texturesynthesis"
+
+[tool.hatch.version]
+path = "src/readyplayerme/texturesynthesis/__about__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/readyplayerme"]
+
+[tool.hatch.envs.default]
+description = "Python virtual environment in project dir to quickly get up and running in an IDE like VSCode."
+type = "virtual"
+path = ".venv"
+dependencies = [
+  "black>=23.3.0",
+  "mypy>=1.5.1",
+  "ruff>=0.0.285",
+  "coverage[toml]>=6.5",
+  "pytest",
+]
+features = [
+  "dev",
+]
+post-install-commands = [
+  "install-precommit",
+]
+
+[tool.hatch.envs.default.scripts]
+install-precommit = "pre-commit install -t pre-commit -t commit-msg -t pre-push"
+test = "pytest {args:tests}"
+test-cov = "coverage run -m pytest {args:tests}"
+cov-report = [
+  "- coverage combine",
+  "coverage report",
+]
+cov = [
+  "test-cov",
+  "cov-report",
+]
+typing = "mypy --install-types --non-interactive {args:src/readyplayerme/texturesynthesis tests}"
+style = [
+  "ruff {args:.}",
+  "black --check --diff {args:.}",
+]
+fmt = [
+  "black {args:.}",
+  "ruff --fix {args:.}",
+  "style",
+]
+all = [
+  "style",
+  "typing",
+  "cov",
+]
+
+[[tool.hatch.envs.all.matrix]]
+python = ["3.10", "3.11"]
+
+[tool.black]
+target-versions = ["py310", "py311"]
+line-length = 120
+skip-string-normalization = false
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+select = [
+  "A",
+  "ANN",
+  "ARG",
+  "B",
+  "C",
+  "D",
+  "DTZ",
+  "E",
+  "EM",
+  "ERA",
+  "F",
+  "FBT",
+  "I",
+  "ICN",
+  "ISC",
+  "N",
+  "PLC",
+  "PLE",
+  "PLR",
+  "PLW",
+  "Q",
+  "RUF",
+  "S",
+  "T",
+  "T20",
+  "TID",
+  "UP",
+  "W",
+  "YTT",
+]
+ignore = [
+  # Allow non-abstract empty methods in abstract base classes
+  "B027",
+  # Allow unused arguments
+  "ARG002",
+  # Allow boolean positional values in function calls, like `dict.get(... True)`
+  "FBT003",
+  # Allow try-except-pass & try-except-continue
+  "S110", "S112",
+  # Ignore complexity
+  "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+  # Exclude self, cls, args, kwargs from annotation, allow dynamically typed expressions (typing.Any) in type annotations
+  "ANN101", "ANN102", "ANN002", "ANN003", "ANN401",
+  # Don't require documentation for every function parameter and magic methods.
+  "D417", "D102", "D105", "D107"
+]
+builtins = ["_"]
+unfixable = [
+  # Don't touch unused imports
+  "F401",
+]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+
+[tool.ruff.isort]
+known-first-party = ["readyplayerme"]
+
+[tool.ruff.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.flake8-quotes]
+docstring-quotes = "double"
+
+[tool.ruff.flake8-annotations]
+mypy-init-return = true
+allow-star-arg-any = true
+ignore-fully-untyped = true
+suppress-none-returning = true
+
+[tool.ruff.flake8-unused-arguments]
+ignore-variadic-names = true
+
+[tool.ruff.pycodestyle]
+ignore-overlong-task-comments = true
+
+[tool.ruff.pydocstyle]
+convention = "pep257"
+ignore-decorators = ["typing.overload"]
+
+[tool.ruff.per-file-ignores]
+# Tests can use magic values, assertions, and relative imports
+"tests/**/*" = ["PLR2004", "S101", "TID252"]
+
+[tool.mypy]
+follow_imports = "silent"
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_any_generics = true
+check_untyped_defs = true
+no_implicit_reexport = true
+
+[[tool.mypy.overrides]]
+module = "readyplayerme.*"
+ignore_missing_imports = true
+
+# for strict mypy:
+disallow_untyped_defs = false
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+warn_untyped_fields = true
+
+[tool.coverage.run]
+source_pkgs = ["readyplayerme/texturesynthesis", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/readyplayerme/texturesynthesis/__about__.py",
+]
+
+[tool.coverage.paths]
+readyplayerme_texturesynthesis = ["src/readyplayerme/texturesynthesis", "*/texturesynthesis/src/readyplayerme/texturesynthesis"]
+tests = ["tests", "*/content-validation-schemas/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
