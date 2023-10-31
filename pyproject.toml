@@ -36,6 +36,7 @@ dependencies = [
 [project.optional-dependencies]
 tests = [
   "pytest",
+  "pytest-xdist",
 ]
 dev = [
   "readyplayerme.texturesynthesis[tests]",
@@ -101,6 +102,9 @@ all = [
 
 [[tool.hatch.envs.all.matrix]]
 python = ["3.10", "3.11"]
+
+[tool.pytest.ini_options]
+addopts="-n 4"
 
 [tool.black]
 target-versions = ["py310", "py311"]
