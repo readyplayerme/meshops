@@ -1,7 +1,7 @@
 """Unit tests for the mesh module."""
 from pathlib import Path
 
-from readyplayerme.texturesynthesis import mesh
+from readyplayerme.meshops import mesh
 
 mocks_path = Path(__file__).parent.parent.parent / "mocks"
 
