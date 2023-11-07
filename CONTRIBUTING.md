@@ -1,4 +1,4 @@
-# Welcome to the Ready Player Me Texture Synthesis contributing guide <!-- omit in toc -->
+# Welcome to the Ready Player Me MeshOps contributing guide <!-- omit in toc -->
 
 In this guide you will get an overview of the contribution workflow from opening an issue, creating a pull request, reviewing, and merging the pull request.
 

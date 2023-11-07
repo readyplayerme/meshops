@@ -1,8 +1,12 @@
-# Texture Synthesis
+# MeshOps
 
-A collection of tools for texture mapping and texture synthesis.
+A collection of tools for dealing with mesh related data.
 
-## UV Seams Matcher
+## Setup
+
+You'll find setup instruction of this project in the CONTRIBUTING.md file.
+
+## UV Seams Transitioning
 
 UV seams are splits in a triangle mesh that, however, is supposed to represent a continuous surface across these splits.
 These splits are necessary to allow the mesh to flatten out cleanly in UV space and have as little distortion in the texture projection as possible.
@@ -10,6 +14,5 @@ The UV seams are splits between UV islands for which the projection onto the mes
 
 ### Goal
 
-- identify UV borders in a mesh
-- pair UV borders that are likely to be seams between UV islands
-- mitigate the mismatch between image content from one border to the other
+- identify UV splits in a mesh
+- mitigate the mismatch between image content when transitioning over a UV split

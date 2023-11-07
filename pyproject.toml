@@ -3,13 +3,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "readyplayerme.texturesynthesis"
+name = "readyplayerme.meshops"
 dynamic = ["version"]
-description = "This package provides means to help with texture mapping, like UV seam mitigation."
+description = "This package provides means to help with mesh processing and some texture related operations, like UV seam mitigation."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
-keywords = ["ready player me", "gltf", "3D", "texture", "texture mapping", "uv mapping", "uv", "uv seam", "uv border",]
+keywords = ["ready player me", "gltf", "3D", "mesh", "texture", "texture mapping", "uv mapping", "uv", "uv seam", "uv border",]
 authors = [
   { name = "Ready Player Me", email = "info@readyplayer.me" },
 ]
@@ -39,17 +39,17 @@ tests = [
   "pytest-xdist",
 ]
 dev = [
-  "readyplayerme.texturesynthesis[tests]",
+  "readyplayerme.meshops[tests]",
   "pre-commit",
 ]
 
 [project.urls]
-Documentation = "https://github.com/readyplayerme/texturesynthesis#readme"
-Issues = "https://github.com/readyplayerme/texturesynthesis/issues"
-Source = "https://github.com/readyplayerme/texturesynthesis"
+Documentation = "https://github.com/readyplayerme/meshops#readme"
+Issues = "https://github.com/readyplayerme/meshops/issues"
+Source = "https://github.com/readyplayerme/meshops"
 
 [tool.hatch.version]
-path = "src/readyplayerme/texturesynthesis/__about__.py"
+path = "src/readyplayerme/meshops/__about__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/readyplayerme"]
@@ -84,7 +84,7 @@ cov = [
   "test-cov",
   "cov-report",
 ]
-typing = "mypy --install-types --non-interactive {args:src/readyplayerme/texturesynthesis tests}"
+typing = "mypy --install-types --non-interactive {args:src/readyplayerme/meshops tests}"
 style = [
   "ruff {args:.}",
   "black --check --diff {args:.}",
@@ -159,7 +159,7 @@ ignore = [
   # Exclude self, cls, args, kwargs from annotation, allow dynamically typed expressions (typing.Any) in type annotations
   "ANN101", "ANN102", "ANN002", "ANN003", "ANN401",
   # Don't require documentation for every function parameter and magic methods.
-  "D417", "D102", "D105", "D107"
+  "D417", "D102", "D105", "D107", "D100"
 ]
 builtins = ["_"]
 unfixable = [
@@ -242,15 +242,15 @@ warn_required_dynamic_aliases = true
 warn_untyped_fields = true
 
 [tool.coverage.run]
-source_pkgs = ["readyplayerme/texturesynthesis", "tests"]
+source_pkgs = ["readyplayerme/meshops", "tests"]
 branch = true
 parallel = true
 omit = [
-  "src/readyplayerme/texturesynthesis/__about__.py",
+  "src/readyplayerme/meshops/__about__.py",
 ]
 
 [tool.coverage.paths]
-readyplayerme_texturesynthesis = ["src/readyplayerme/texturesynthesis", "*/texturesynthesis/src/readyplayerme/texturesynthesis"]
+readyplayerme_meshops = ["src/readyplayerme/meshops", "*/meshops/src/readyplayerme/meshops"]
 tests = ["tests", "*/content-validation-schemas/tests"]
 
 [tool.coverage.report]
