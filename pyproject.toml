@@ -251,7 +251,7 @@ omit = [
 
 [tool.coverage.paths]
 readyplayerme_meshops = ["src/readyplayerme/meshops", "*/meshops/src/readyplayerme/meshops"]
-tests = ["tests", "*/content-validation-schemas/tests"]
+tests = ["tests", "*/meshops/tests"]
 
 [tool.coverage.report]
 exclude_lines = [
