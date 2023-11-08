@@ -36,11 +36,11 @@ jobs:
     - name: Install Hatch
       run: pip install --upgrade hatch
 
-    - name: Run tests
-      run: hatch run cov
-
     - name: Run linting
-      run: hatch run style
+      run: hatch run lint:style
 
     - name: Run type-checking
-      run: hatch run typing
+      run: hatch run lint:typing
+
+    - name: Run tests
+      run: hatch run test:cov
