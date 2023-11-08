@@ -34,12 +34,18 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-tests = [
+test = [
   "pytest",
   "pytest-xdist",
+  "coverage[toml]>=6.5",
+]
+lint = [
+  "black>=23.3.0",
+  "mypy>=1.5.1",
+  "ruff>=0.0.285",
 ]
 dev = [
-  "readyplayerme.meshops[tests]",
+  "readyplayerme.meshops[test, lint]",
   "pre-commit",
 ]
 
@@ -58,13 +64,6 @@ packages = ["src/readyplayerme"]
 description = "Python virtual environment in project dir to quickly get up and running in an IDE like VSCode."
 type = "virtual"
 path = ".venv"
-dependencies = [
-  "black>=23.3.0",
-  "mypy>=1.5.1",
-  "ruff>=0.0.285",
-  "coverage[toml]>=6.5",
-  "pytest",
-]
 features = [
   "dev",
 ]
@@ -100,11 +99,27 @@ all = [
   "cov",
 ]
 
+[tool.hatch.envs.lint]
+description = "Python virtual environment to be used in CI to run linting and type checking."
+# Note: This still inherits the path from the default env, so it will use the same venv.
+features = [
+  "lint",
+]
+post-install-commands = []
+
+[tool.hatch.envs.test]
+description = "Python virtual environment to be used in CI to run tests."
+# Note: This still inherits the path from the default env, so it will use the same venv.
+features = [
+  "test",
+]
+post-install-commands = []
+
 [[tool.hatch.envs.all.matrix]]
 python = ["3.10", "3.11"]
 
 [tool.pytest.ini_options]
-addopts="-n 4"
+#addopts="-n auto"
 
 [tool.black]
 target-versions = ["py310", "py311"]
@@ -227,6 +242,7 @@ warn_unused_ignores = true
 disallow_any_generics = true
 check_untyped_defs = true
 no_implicit_reexport = true
+plugins = ["numpy.typing.mypy_plugin"]
 
 [[tool.mypy.overrides]]
 module = "readyplayerme.*"
@@ -235,25 +251,28 @@ ignore_missing_imports = true
 # for strict mypy:
 disallow_untyped_defs = false
 
-[tool.pydantic-mypy]
-init_forbid_extra = true
-init_typed = true
-warn_required_dynamic_aliases = true
-warn_untyped_fields = true
+[[tool.mypy.overrides]]
+module = "trimesh.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "scipy.*"
+ignore_missing_imports = true
 
 [tool.coverage.run]
-source_pkgs = ["readyplayerme/meshops", "tests"]
+source_pkgs = ["readyplayerme", "tests"]
 branch = true
 parallel = true
 omit = [
-  "src/readyplayerme/meshops/__about__.py",
+  "src/readyplayerme/*/__about__.py",
 ]
 
 [tool.coverage.paths]
-readyplayerme_meshops = ["src/readyplayerme/meshops", "*/meshops/src/readyplayerme/meshops"]
-tests = ["tests", "*/content-validation-schemas/tests"]
+coverage_debugging = ["src/readyplayerme", "*/meshops/src/readyplayerme"]
+tests = ["tests", "*/meshops/tests"]
 
 [tool.coverage.report]
+include_namespace_packages = true
 exclude_lines = [
   "no cov",
   "if __name__ == .__main__.:",

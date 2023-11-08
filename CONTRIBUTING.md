@@ -18,17 +18,17 @@ Here are some resources to help you get started with open source contributions:
 ### Create a new issue
 
 If you spot a problem with the schemas or package, [search if an issue already exists](https://docs.github.com/en/github/searching-for-information-on-github/searching-on-github/searching-issues-and-pull-requests#search-by-the-title-body-or-comments).
-If a related issue doesn't exist, you can open a new issue using a relevant [issue form](https://github.com/readyplayerme/texturesynthesis/issues/new/choose).
+If a related issue doesn't exist, you can open a new issue using a relevant [issue form](https://github.com/readyplayerme/meshops/issues/new/choose).
 
 ### Solve an issue
 
-Scan through our [existing issues](https://github.com/readyplayerme/texturesynthesis/issues) to find one that interests you.
+Scan through our [existing issues](https://github.com/readyplayerme/meshops/issues) to find one that interests you.
 You can narrow down the search using `labels` as filters.
 
 ### Labels
 
 Labels can help you find an issue you'd like to help with.
-The [`good first issue` label](https://github.com/readyplayerme/texturesynthesis/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) is for problems or updates we think are ideal for new joiners.
+The [`good first issue` label](https://github.com/readyplayerme/meshops/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) is for problems or updates we think are ideal for new joiners.
 
 ## Contribute
 

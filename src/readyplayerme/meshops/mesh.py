@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import TypeAlias
 
 import numpy as np
+import numpy.typing as npt
 import trimesh
 
 # Abstraction for the mesh type.
@@ -37,7 +38,7 @@ def read_glb(filename: str | Path) -> Mesh:
     return trimesh.load(filename, process=False, force="mesh")
 
 
-def get_border_vertices(mesh: Mesh) -> np.array:
+def get_border_vertices(mesh: Mesh) -> npt.NDArray[np.int64]:
     """Return the indices of the vertices on the borders of a mesh.
 
     :param mesh: The mesh to get the border vertices from.
