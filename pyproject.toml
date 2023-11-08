@@ -251,6 +251,14 @@ ignore_missing_imports = true
 # for strict mypy:
 disallow_untyped_defs = false
 
+[[tool.mypy.overrides]]
+module = "trimesh.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "scipy.*"
+ignore_missing_imports = true
+
 [tool.coverage.run]
 source_pkgs = ["readyplayerme", "tests"]
 branch = true
