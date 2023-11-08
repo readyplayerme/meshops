@@ -235,12 +235,6 @@ ignore_missing_imports = true
 # for strict mypy:
 disallow_untyped_defs = false
 
-[tool.pydantic-mypy]
-init_forbid_extra = true
-init_typed = true
-warn_required_dynamic_aliases = true
-warn_untyped_fields = true
-
 [tool.coverage.run]
 source_pkgs = ["readyplayerme/meshops", "tests"]
 branch = true
