@@ -104,7 +104,7 @@ all = [
 python = ["3.10", "3.11"]
 
 [tool.pytest.ini_options]
-addopts="-n 4"
+#addopts="-n auto"
 
 [tool.black]
 target-versions = ["py310", "py311"]
@@ -236,18 +236,19 @@ ignore_missing_imports = true
 disallow_untyped_defs = false
 
 [tool.coverage.run]
-source_pkgs = ["readyplayerme/meshops", "tests"]
+source_pkgs = ["readyplayerme", "tests"]
 branch = true
 parallel = true
 omit = [
-  "src/readyplayerme/meshops/__about__.py",
+  "src/readyplayerme/*/__about__.py",
 ]
 
 [tool.coverage.paths]
-readyplayerme_meshops = ["src/readyplayerme/meshops", "*/meshops/src/readyplayerme/meshops"]
+coverage_debugging = ["src/readyplayerme", "*/meshops/src/readyplayerme"]
 tests = ["tests", "*/meshops/tests"]
 
 [tool.coverage.report]
+include_namespace_packages = true
 exclude_lines = [
   "no cov",
   "if __name__ == .__main__.:",
