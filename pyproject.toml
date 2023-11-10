@@ -48,6 +48,9 @@ dev = [
   "readyplayerme.meshops[test, lint]",
   "pre-commit",
 ]
+profile = [
+  "pyinstrument",
+]
 
 [project.urls]
 Documentation = "https://github.com/readyplayerme/meshops#readme"
