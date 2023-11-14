@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
     types: [ready_for_review, reopened]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run on'
+        required: true
+        default: 'main'
 
 concurrency:
   group: test-${{ github.head_ref }}
