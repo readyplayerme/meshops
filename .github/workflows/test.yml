@@ -44,3 +44,10 @@ jobs:
 
     - name: Run tests
       run: hatch run test:cov
+
+    - name: Upload performance profiling artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-profiling
+        path: tests/.profiles
+        if-no-files-found: error
