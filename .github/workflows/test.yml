@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
     types: [ready_for_review, reopened]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run on'
+        required: true
+        default: 'main'
 
 concurrency:
   group: test-${{ github.head_ref }}
@@ -36,11 +42,18 @@ jobs:
     - name: Install Hatch
       run: pip install --upgrade hatch
 
+    - name: Run tests
+      run: hatch run test:cov
+
+    - name: Upload performance profiling artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-profiling
+        path: tests/.profiles
+        if-no-files-found: error
+
     - name: Run linting
       run: hatch run lint:style
 
     - name: Run type-checking
       run: hatch run lint:typing
-
-    - name: Run tests
-      run: hatch run test:cov

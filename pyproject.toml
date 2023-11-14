@@ -38,6 +38,7 @@ test = [
   "pytest",
   "pytest-xdist",
   "coverage[toml]>=6.5",
+  "pyinstrument",
 ]
 lint = [
   "black>=23.3.0",
@@ -257,6 +258,10 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "scipy.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pyinstrument.*"
 ignore_missing_imports = true
 
 [tool.coverage.run]
