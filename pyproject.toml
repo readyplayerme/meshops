@@ -38,6 +38,7 @@ test = [
   "pytest",
   "pytest-xdist",
   "coverage[toml]>=6.5",
+  "pyinstrument",
 ]
 lint = [
   "black>=23.3.0",
@@ -47,9 +48,6 @@ lint = [
 dev = [
   "readyplayerme.meshops[test, lint]",
   "pre-commit",
-]
-profile = [
-  "pyinstrument",
 ]
 
 [project.urls]
