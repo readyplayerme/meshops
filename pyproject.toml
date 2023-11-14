@@ -260,6 +260,10 @@ ignore_missing_imports = true
 module = "scipy.*"
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "pyinstrument.*"
+ignore_missing_imports = true
+
 [tool.coverage.run]
 source_pkgs = ["readyplayerme", "tests"]
 branch = true
