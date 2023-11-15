@@ -1,3 +1,4 @@
+"""Pytest fixtures for the whole repo."""
 from pathlib import Path
 
 import pytest
