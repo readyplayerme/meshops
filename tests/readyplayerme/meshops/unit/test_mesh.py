@@ -57,3 +57,14 @@ def test_get_boundary_vertices(mock_mesh: Mesh):
     assert np.array_equiv(
         np.sort(boundary_vertices), [0, 2, 4, 6, 7, 9, 10]
     ), "The vertices returned by get_border_vertices do not match the expected vertices."
+
+
+def test_group_shared_border_vertices(mock_mesh: Mesh):
+    """Test the get_overlapping_vertices functions returns the expected indices groups."""
+    border_vertices = np.array([0, 2, 4, 6, 7, 9, 10])
+    vertices = mock_mesh.vertices
+    grouped_border_vertex_indices = mesh.get_overlapping_vertices(vertices, border_vertices)
+
+    assert np.array_equiv(
+        (grouped_border_vertex_indices), [[9, 10]]
+    ), "The vertices returned by get_group_shared_border_vertices do not match the expected vertices."

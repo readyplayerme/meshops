@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import trimesh
 
-from readyplayerme.meshops.types import Edges, Indices, Mesh
+from readyplayerme.meshops.types import Edges, Indices, Mesh, Vertices
 
 
 def read_mesh(filename: str | Path) -> Mesh:
@@ -47,3 +47,26 @@ def get_boundary_vertices(edges: Edges) -> Indices:
     unique_edges, edge_triangle_count = np.unique(sorted_edges, return_counts=True, axis=0)
     border_edge_indices = np.where(edge_triangle_count == 1)[0]
     return np.unique(unique_edges[border_edge_indices])
+
+
+def get_overlapping_vertices(vertices: Vertices, vertex_indices_pool: Indices) -> list[np.int64]:
+    """Return the indices of the vertices grouped by the same position.
+
+    Vertices that have the same position belong to a seam.
+
+
+    :param vertices: All the vertices of the mesh.
+    :param vertex_indices_pool: A specific pool of Vertex indices.
+    :return: A list of grouped border vertices that share position.
+    """
+    vertex_positions_pool_ = vertices[vertex_indices_pool]
+    rounded_positions = np.round(vertex_positions_pool_, decimals=5)
+    structured_positions = np.core.records.fromarrays(
+        rounded_positions.transpose(), names="x, y, z", formats="f8, f8, f8"
+    )
+    unique_positions, indices = np.unique(structured_positions, return_inverse=True)
+    grouped_indices = [
+        vertex_indices_pool[indices == i] for i in range(len(unique_positions)) if (indices == i).sum() > 1
+    ]
+
+    return grouped_indices
