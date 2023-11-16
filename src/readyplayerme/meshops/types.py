@@ -9,6 +9,7 @@ Indices: TypeAlias = npt.NDArray[np.int32] | npt.NDArray[np.int64]  # Shape (i,)
 Vertices: TypeAlias = npt.NDArray[np.float32] | npt.NDArray[np.float64]  # Shape (v, 3)
 Edges: TypeAlias = npt.NDArray[np.int32] | npt.NDArray[np.int64]  # Shape (e, 2)
 Faces: TypeAlias = npt.NDArray[np.int32] | npt.NDArray[np.int64]  # Shape (f, 3)
+VariableLengthArrays: TypeAlias = list[npt.NDArray[np.int64]]
 
 
 class Mesh(Protocol):

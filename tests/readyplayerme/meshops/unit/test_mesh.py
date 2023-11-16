@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from readyplayerme.meshops import mesh
-from readyplayerme.meshops.types import Mesh
+from readyplayerme.meshops.types import Indices, Mesh
 
 
 class TestReadMesh:
@@ -59,12 +59,19 @@ def test_get_boundary_vertices(mock_mesh: Mesh):
     ), "The vertices returned by get_border_vertices do not match the expected vertices."
 
 
-def test_group_shared_border_vertices(mock_mesh: Mesh):
+@pytest.mark.parametrize(
+    "mock_indices, expected",
+    [
+        (np.array([0, 2, 4, 6, 7, 9, 10]), np.array([[9, 10]])),
+        (None, np.array([[9, 10]])),
+        ([], np.array([])),
+    ],
+)
+def test_overlapping_vertices(mock_mesh: Mesh, mock_indices: Indices, expected: Indices):
     """Test the get_overlapping_vertices functions returns the expected indices groups."""
-    border_vertices = np.array([0, 2, 4, 6, 7, 9, 10])
     vertices = mock_mesh.vertices
-    grouped_border_vertex_indices = mesh.get_overlapping_vertices(vertices, border_vertices)
-
+    grouped_vertices = mesh.get_overlapping_vertices(vertices, mock_indices)
+    assert len(grouped_vertices) == len(expected), "Number of groups doesn't match expected"
     assert np.array_equiv(
-        (grouped_border_vertex_indices), [[9, 10]]
-    ), "The vertices returned by get_group_shared_border_vertices do not match the expected vertices."
+        grouped_vertices, expected
+    ), "The vertices returned by get_overlapping_vertices do not match the expected vertices."
