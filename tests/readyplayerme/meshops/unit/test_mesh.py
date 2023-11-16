@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from readyplayerme.meshops import mesh
-from readyplayerme.meshops.types import Mesh
+from readyplayerme.meshops.types import Indices, Mesh, TexCoord, UVs
 
 
 class TestReadMesh:
@@ -57,3 +57,35 @@ def test_get_boundary_vertices(mock_mesh: Mesh):
     assert np.array_equiv(
         np.sort(boundary_vertices), [0, 2, 4, 6, 7, 9, 10]
     ), "The vertices returned by get_border_vertices do not match the expected vertices."
+
+
+@pytest.mark.parametrize(
+    "uvs, width, height, indices, expected,exception",
+    [
+        # Test case 1: simple UV conversion with specific indices
+        (np.array([[0.5, 0.5], [0.25, 0.75]]), 100, 100, np.array([0]), np.array([[50, 50]]), None),
+        # Test case 2: full range UV conversion without specific indices
+        (np.array([[0, 0], [1, 1]]), 200, 200, None, np.array([[0, 200], [200, 0]]), None),
+        # Test case 3: empty indices
+        (np.array([[0.5, 0.5], [0.25, 0.75]]), 50, 50, np.array([]), np.empty((0, 2)), None),
+        # Test case 4: UV coordinates out of range
+        (np.array([[-0.5, 1.5], [2, -1]]), 100, 100, np.array([0, 1]), None, ValueError),
+        # Test case 5: Indices without corresponding UVs
+        (np.array([[0.5, 0.5], [0.25, 0.75]]), 100, 100, np.array([0, 1, 2]), None, ValueError),
+    ],
+)
+def test_uv_to_texture_space(
+    uvs: UVs,
+    width: int,
+    height: int,
+    indices: Indices,
+    expected: TexCoord,
+    exception: type[BaseException] | tuple[type[BaseException], ...],
+):
+    """Test the uv_to_texture_space function returns the correct texture space coordinates."""
+    if exception:
+        with pytest.raises(exception):
+            mesh.uv_to_texture_space(uvs, width, height, indices)
+    else:
+        texture_space_coords = mesh.uv_to_texture_space(uvs, width, height, indices)
+        assert np.array_equal(texture_space_coords, expected), "Texture space coordinates do not match expected values."
