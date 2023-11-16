@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from readyplayerme.meshops import mesh
-from readyplayerme.meshops.types import Indices, Mesh
+from readyplayerme.meshops.types import Indices, Mesh, Vertices
 
 
 class TestReadMesh:
@@ -60,17 +60,42 @@ def test_get_boundary_vertices(mock_mesh: Mesh):
 
 
 @pytest.mark.parametrize(
-    "mock_indices, expected",
+    "vertices, indices, expected",
     [
-        (np.array([0, 2, 4, 6, 7, 9, 10]), np.array([[9, 10]])),
-        (None, np.array([[9, 10]])),
-        ([], np.array([])),
+        # Vertices from our mock mesh.
+        ("mock_mesh", np.array([0, 2, 4, 6, 7, 9, 10]), [(np.array([9, 10]))]),
+        # Close positions, but with imprecision.
+        (
+            np.array(
+                [
+                    [1.0, 1.0, 1.0],
+                    [0.99998, 0.99998, 0.99998],
+                    [0.49998, 0.5, 0.5],
+                    [0.5, 0.5, 0.5],
+                    [0.50001, 0.50001, 0.50001],
+                ]
+            ),
+            np.array([0, 1, 2, 3, 4]),
+            [np.array([0, 1]), np.array([2, 3, 4])],
+        ),
+        # Overlapping vertices, None indices given.
+        (
+            np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]),
+            None,
+            [np.array([0, 1])],
+        ),
+        # Overlapping vertices, but empty indices given.
+        (np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]), np.array([], dtype=np.int32), []),
     ],
 )
-def test_overlapping_vertices(mock_mesh: Mesh, mock_indices: Indices, expected: Indices):
+def test_overlapping_vertices(vertices: Vertices, indices: Indices, expected: Indices, request: pytest.FixtureRequest):
     """Test the get_overlapping_vertices functions returns the expected indices groups."""
-    vertices = mock_mesh.vertices
-    grouped_vertices = mesh.get_overlapping_vertices(vertices, mock_indices)
+    # Get vertices from the fixture if one is given.
+    if isinstance(vertices, str) and vertices == "mock_mesh":
+        vertices = request.getfixturevalue("mock_mesh").vertices
+
+    grouped_vertices = mesh.get_overlapping_vertices(vertices, indices)
+
     assert len(grouped_vertices) == len(expected), "Number of groups doesn't match expected"
     assert np.array_equiv(
         grouped_vertices, expected
