@@ -103,3 +103,12 @@ def test_get_overlapping_vertices(
     assert len(grouped_vertices) == len(expected), "Number of groups doesn't match expected"
     for group, exp_group in zip(grouped_vertices, expected, strict=False):
         assert np.array_equal(group, exp_group), f"Grouped vertices {group} do not match expected {exp_group}"
+
+
+def test_get_overlapping_vertices_index_error():
+    """Test the get_overlapping_vertices function with indices that are out of bounds for the vertices."""
+    vertices = np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
+    indices = np.array([2, 3, -4])
+
+    with pytest.raises(IndexError):
+        mesh.get_overlapping_vertices(vertices, indices)

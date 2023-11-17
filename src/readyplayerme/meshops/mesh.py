@@ -60,7 +60,11 @@ def get_overlapping_vertices(
     :param precision: Tolerance for considering positions as overlapping.
     :return: A list of grouped vertices that share position.
     """
-    selected_vertices = vertices_pos if indices is None else vertices_pos[indices]
+    try:
+        selected_vertices = vertices_pos if indices is None else vertices_pos[indices]
+    except IndexError as error:
+        msg = "Indices must be within bounds of vertices array."
+        raise IndexError(msg) from error
 
     tree = cKDTree(selected_vertices)
 
