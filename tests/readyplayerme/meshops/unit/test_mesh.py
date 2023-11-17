@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from readyplayerme.meshops import mesh
-from readyplayerme.meshops.types import Indices, Mesh, Vertices
+from readyplayerme.meshops.types import IndexGroups, Indices, Mesh, Vertices
 
 
 class TestReadMesh:
@@ -91,7 +91,7 @@ def test_get_boundary_vertices(mock_mesh: Mesh):
     ],
 )
 def test_get_overlapping_vertices(
-    vertices: Vertices, indices: Indices, precision: float, expected: Indices, request: pytest.FixtureRequest
+    vertices: Vertices, indices: Indices, precision: float, expected: IndexGroups, request: pytest.FixtureRequest
 ):
     """Test the get_overlapping_vertices functions returns the expected indices groups."""
     # Get vertices from the fixture if one is given.
