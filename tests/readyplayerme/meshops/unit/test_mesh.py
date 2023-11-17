@@ -60,10 +60,10 @@ def test_get_boundary_vertices(mock_mesh: Mesh):
 
 
 @pytest.mark.parametrize(
-    "vertices, indices, expected",
+    "vertices, indices, precision, expected",
     [
         # Vertices from our mock mesh.
-        ("mock_mesh", np.array([0, 2, 4, 6, 7, 9, 10]), [(np.array([9, 10]))]),
+        ("mock_mesh", np.array([0, 2, 4, 6, 7, 9, 10]), 0.1, [np.array([9, 10])]),
         # Close positions, but with imprecision.
         (
             np.array(
@@ -76,27 +76,30 @@ def test_get_boundary_vertices(mock_mesh: Mesh):
                 ]
             ),
             np.array([0, 1, 2, 3, 4]),
+            0.0001,
             [np.array([0, 1]), np.array([2, 3, 4])],
         ),
         # Overlapping vertices, None indices given.
         (
             np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]),
             None,
+            0.1,
             [np.array([0, 1])],
         ),
         # Overlapping vertices, but empty indices given.
-        (np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]), np.array([], dtype=np.int32), []),
+        (np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]), np.array([], dtype=np.int32), 0.1, []),
     ],
 )
-def test_overlapping_vertices(vertices: Vertices, indices: Indices, expected: Indices, request: pytest.FixtureRequest):
+def test_get_overlapping_vertices(
+    vertices: Vertices, indices: Indices, precision: float, expected: Indices, request: pytest.FixtureRequest
+):
     """Test the get_overlapping_vertices functions returns the expected indices groups."""
     # Get vertices from the fixture if one is given.
     if isinstance(vertices, str) and vertices == "mock_mesh":
         vertices = request.getfixturevalue("mock_mesh").vertices
 
-    grouped_vertices = mesh.get_overlapping_vertices(vertices, indices)
+    grouped_vertices = mesh.get_overlapping_vertices(vertices, indices, precision)
 
     assert len(grouped_vertices) == len(expected), "Number of groups doesn't match expected"
-    assert np.array_equiv(
-        grouped_vertices, expected
-    ), "The vertices returned by get_overlapping_vertices do not match the expected vertices."
+    for group, exp_group in zip(grouped_vertices, expected, strict=False):
+        assert np.array_equal(group, exp_group), f"Grouped vertices {group} do not match expected {exp_group}"

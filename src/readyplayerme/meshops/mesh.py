@@ -4,8 +4,9 @@ from pathlib import Path
 
 import numpy as np
 import trimesh
+from scipy.spatial import cKDTree
 
-from readyplayerme.meshops.types import Edges, Indices, Mesh, VariableLengthArrays, Vertices
+from readyplayerme.meshops.types import Edges, IndexGroups, Indices, Mesh, Vertices
 
 
 def read_mesh(filename: str | Path) -> Mesh:
@@ -49,27 +50,31 @@ def get_boundary_vertices(edges: Edges) -> Indices:
     return np.unique(unique_edges[border_edge_indices])
 
 
-def get_overlapping_vertices(vertices_pos: Vertices, indices: Indices | None = None) -> VariableLengthArrays:
+def get_overlapping_vertices(
+    vertices_pos: Vertices, indices: Indices | None = None, tolerance: float = 0.00001
+) -> IndexGroups:
     """Return the indices of the vertices grouped by the same position.
 
-    Vertices that have the same position belong to a seam.
-
-
-    :param vertices: All the vertices of the mesh.
-    :param indices:  Vertex indices.
-    :return: A list of grouped border vertices that share position.
+    :param vertices_pos: All the vertices of the mesh.
+    :param indices: Vertex indices.
+    :param precision: Tolerance for considering positions as overlapping.
+    :return: A list of grouped vertices that share position.
     """
-    if indices is None:
-        indices = np.arange(len(vertices_pos))
+    selected_vertices = vertices_pos if indices is None else vertices_pos[indices]
 
-    vertex_positions = vertices_pos[indices]
-    rounded_positions = np.round(vertex_positions, decimals=5)
-    structured_positions = np.core.records.fromarrays(
-        rounded_positions.transpose(), names="x, y, z", formats="f8, f8, f8"
-    )
-    unique_positions, local_indices = np.unique(structured_positions, return_inverse=True)
-    grouped_indices = [
-        indices[local_indices == i] for i in range(len(unique_positions)) if (local_indices == i).sum() > 1
-    ]
+    tree = cKDTree(selected_vertices)
+
+    grouped_indices = []
+    processed = set()
+    for idx, vertex in enumerate(selected_vertices):
+        if idx not in processed:
+            # Find all points within the tolerance distance
+            neighbors = tree.query_ball_point(vertex, tolerance)
+            if len(neighbors) > 1:  # Include only groups with multiple vertices
+                # Translate to original indices if needed
+                group = np.array(neighbors, dtype=np.uint32) if indices is None else indices[neighbors]
+                grouped_indices.append(group)
+            # Mark these points as processed
+            processed.update(neighbors)
 
     return grouped_indices
