@@ -4,8 +4,9 @@ from pathlib import Path
 
 import numpy as np
 import trimesh
+from scipy.spatial import cKDTree
 
-from readyplayerme.meshops.types import Edges, Indices, Mesh
+from readyplayerme.meshops.types import Edges, IndexGroups, Indices, Mesh, Vertices
 
 
 def read_mesh(filename: str | Path) -> Mesh:
@@ -47,3 +48,47 @@ def get_boundary_vertices(edges: Edges) -> Indices:
     unique_edges, edge_triangle_count = np.unique(sorted_edges, return_counts=True, axis=0)
     border_edge_indices = np.where(edge_triangle_count == 1)[0]
     return np.unique(unique_edges[border_edge_indices])
+
+
+def get_overlapping_vertices(
+    vertices_pos: Vertices, indices: Indices | None = None, tolerance: float = 0.00001
+) -> IndexGroups:
+    """Return the indices of the vertices grouped by the same position.
+
+    :param vertices_pos: All the vertices of the mesh.
+    :param indices: Vertex indices.
+    :param precision: Tolerance for considering positions as overlapping.
+    :return: A list of grouped vertices that share position.
+    """
+    # Not using try / except because when using an index of -1 gets the last element and creates a false positive
+    if indices is None:
+        selected_vertices = vertices_pos
+    else:
+        if len(indices) == 0:
+            return []
+        if np.any(indices < 0):
+            msg = "Negative index value is not allowed."
+            raise IndexError(msg)
+
+        if np.max(indices) >= len(vertices_pos):
+            msg = "Index is out of bounds."
+            raise IndexError(msg)
+
+        selected_vertices = vertices_pos[indices]
+
+    tree = cKDTree(selected_vertices)
+
+    grouped_indices = []
+    processed = set()
+    for idx, vertex in enumerate(selected_vertices):
+        if idx not in processed:
+            # Find all points within the tolerance distance
+            neighbors = tree.query_ball_point(vertex, tolerance)
+            if len(neighbors) > 1:  # Include only groups with multiple vertices
+                # Translate to original indices if needed
+                group = np.array(neighbors, dtype=np.uint32) if indices is None else indices[neighbors]
+                grouped_indices.append(group)
+            # Mark these points as processed
+            processed.update(neighbors)
+
+    return grouped_indices
