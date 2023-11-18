@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import trimesh
 
-from readyplayerme.meshops.types import Edges, Indices, Mesh, TexCoord, UVs
+from readyplayerme.meshops.types import Edges, Indices, Mesh, PixelCoord, UVs
 
 
 def read_mesh(filename: str | Path) -> Mesh:
@@ -54,7 +54,7 @@ def uv_to_texture_space(
     width: int,
     height: int,
     indices: Indices | None = None,
-) -> TexCoord:
+) -> PixelCoord:
     """Convert UV coordinates to texture space coordinates.
 
     :param uvs: UV coordinates of the mesh.
@@ -63,26 +63,30 @@ def uv_to_texture_space(
     :param height: Height of the texture image.
     :return: Texture space coordinates as pixel values.
     """
-    indices = (
-        np.arange(len(uvs)) if indices is None else (np.empty((0, 2), dtype=np.int32) if len(indices) == 0 else indices)
-    )
+    if indices is None:
+        indices = np.arange(len(uvs), dtype=np.uint16)
+    elif len(indices) == 0:
+        indices = np.empty((0, 2), dtype=np.uint16)
 
-    if np.any(indices >= len(uvs)):
-        msg = "Some indices do not have corresponding UV coordinates."
-        raise ValueError(msg)
+    uvs_length = len(uvs)
+    out_of_bounds_indices = indices[indices >= uvs_length]
+    if out_of_bounds_indices.size > 0:
+        msg = f"Index {out_of_bounds_indices[0]} is out of bounds for UVs with size {uvs_length}."
+        raise IndexError(msg)
 
     selected_uvs = uvs[indices]
 
-    if np.any(selected_uvs < 0) or np.any(selected_uvs > 1):
-        msg = "UV coordinates are out of bounds (0-1)."
-        raise ValueError(msg)
+    # Wrap UV coordinates within the range [0, 1]
+    wrapped_uvs = np.mod((selected_uvs), 1)
+
+    wrapped_uvs[selected_uvs == 1] = 1
+    wrapped_uvs[selected_uvs == 0] = 0
+    wrapped_uvs[selected_uvs == -1] = 0
 
     # Convert UV coordinates to texture space (pixel coordinates)
-    # Flip the y-axis as UV (0,0) usually represents bottom-left,
-    # while texture space (0,0) is typically top-left.
     texture_space_coords = np.empty((len(selected_uvs), 2), dtype=np.int32)
-    if len(selected_uvs) > 0:
-        texture_space_coords[:, 0] = (selected_uvs[:, 0] * width).astype(np.int32)
-        texture_space_coords[:, 1] = ((1 - selected_uvs[:, 1]) * height).astype(np.int32)
+    if len(wrapped_uvs) > 0:
+        texture_space_coords[:, 0] = (wrapped_uvs[:, 0] * width - 0.5).astype(np.int32)
+        texture_space_coords[:, 1] = (height - wrapped_uvs[:, 1] * height - 0.5).astype(np.int32)
 
     return texture_space_coords
