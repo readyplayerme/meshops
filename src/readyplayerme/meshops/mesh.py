@@ -4,8 +4,9 @@ from pathlib import Path
 
 import numpy as np
 import trimesh
+from scipy.spatial import cKDTree
 
-from readyplayerme.meshops.types import Edges, Indices, Mesh, PixelCoord, UVs
+from readyplayerme.meshops.types import Edges, IndexGroups, Indices, Mesh, PixelCoord, UVs, Vertices
 
 
 def read_mesh(filename: str | Path) -> Mesh:
@@ -49,6 +50,50 @@ def get_boundary_vertices(edges: Edges) -> Indices:
     return np.unique(unique_edges[border_edge_indices])
 
 
+def get_overlapping_vertices(
+    vertices_pos: Vertices, indices: Indices | None = None, tolerance: float = 0.00001
+) -> IndexGroups:
+    """Return the indices of the vertices grouped by the same position.
+
+    :param vertices_pos: All the vertices of the mesh.
+    :param indices: Vertex indices.
+    :param precision: Tolerance for considering positions as overlapping.
+    :return: A list of grouped vertices that share position.
+    """
+    # Not using try / except because when using an index of -1 gets the last element and creates a false positive
+    if indices is None:
+        selected_vertices = vertices_pos
+    else:
+        if len(indices) == 0:
+            return []
+        if np.any(indices < 0):
+            msg = "Negative index value is not allowed."
+            raise IndexError(msg)
+
+        if np.max(indices) >= len(vertices_pos):
+            msg = "Index is out of bounds."
+            raise IndexError(msg)
+
+        selected_vertices = vertices_pos[indices]
+
+    tree = cKDTree(selected_vertices)
+
+    grouped_indices = []
+    processed = set()
+    for idx, vertex in enumerate(selected_vertices):
+        if idx not in processed:
+            # Find all points within the tolerance distance
+            neighbors = tree.query_ball_point(vertex, tolerance)
+            if len(neighbors) > 1:  # Include only groups with multiple vertices
+                # Translate to original indices if needed
+                group = np.array(neighbors, dtype=np.uint32) if indices is None else indices[neighbors]
+                grouped_indices.append(group)
+            # Mark these points as processed
+            processed.update(neighbors)
+
+    return grouped_indices
+
+
 def uv_to_texture_space(
     uvs: UVs,
     width: int,
@@ -79,9 +124,8 @@ def uv_to_texture_space(
     # Wrap UV coordinates within the range [0, 1]
     wrapped_uvs = np.mod((selected_uvs), 1)
 
+    # with wrapping, we keep the max 1 as 1 and not transpose into the next space
     wrapped_uvs[selected_uvs == 1] = 1
-    wrapped_uvs[selected_uvs == 0] = 0
-    wrapped_uvs[selected_uvs == -1] = 0
 
     # Convert UV coordinates to texture space (pixel coordinates)
     texture_space_coords = np.empty((len(selected_uvs), 2), dtype=np.int32)
