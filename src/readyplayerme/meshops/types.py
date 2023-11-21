@@ -10,9 +10,9 @@ Vertices: TypeAlias = npt.NDArray[np.float32] | npt.NDArray[np.float64]  # Shape
 Edges: TypeAlias = npt.NDArray[np.int32] | npt.NDArray[np.int64]  # Shape (e, 2)
 Faces: TypeAlias = npt.NDArray[np.int32] | npt.NDArray[np.int64]  # Shape (f, 3)
 IndexGroups: TypeAlias = list[npt.NDArray[np.uint32]]
-VariableLengthArrays: TypeAlias = list[npt.NDArray[np.int64]]
-UVs: TypeAlias = npt.NDArray[np.float32] | npt.NDArray[np.float64]  # Shape (uv, 2)
-PixelCoord: TypeAlias = npt.NDArray[np.uint16]  # Shape (xy, 2)
+
+UVs: TypeAlias = npt.NDArray[np.float32] | npt.NDArray[np.float64]  # Shape (i, 2)
+PixelCoord: TypeAlias = npt.NDArray[np.uint16]  # Shape (i, 2)
 
 
 class Mesh(Protocol):

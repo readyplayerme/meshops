@@ -103,15 +103,15 @@ def uv_to_texture_space(
     """Convert UV coordinates to texture space coordinates.
 
     :param uvs: UV coordinates of the mesh.
-    :param indices: Indices of the vertices whose UV coordinates are provided.
+    :param indices: Optional subset of UV indices for which to retrieve pixel coordinates.
     :param width: Width of the texture image.
     :param height: Height of the texture image.
-    :return: Texture space coordinates as pixel values.
+    :return: Coordinates in texture space given the input width and height.
     """
     if indices is None:
         indices = np.arange(len(uvs), dtype=np.uint16)
-if not len(indices):
-    return np.empty((0, 2), dtype=np.unit16)
+    if not len(indices):
+        return np.empty((0, 2), dtype=np.uint16)
 
     try:
         selected_uvs = uvs if indices is None else uvs[indices]
@@ -119,15 +119,16 @@ if not len(indices):
         msg = f"Index {np.where(indices>=len(uvs))[0]} is out of bounds for UVs with shape {uvs.shape}."
         raise IndexError(msg) from error
     # Wrap UV coordinates within the range [0, 1]
-    wrapped_uvs = np.mod((selected_uvs), 1)
+    wrapped_uvs = np.mod(selected_uvs, 1)
 
     # with wrapping, we keep the max 1 as 1 and not transpose into the next space
     wrapped_uvs[selected_uvs == 1] = 1
 
+    # Initialize the array
+    texture_space_coords = np.empty((len(selected_uvs), 2), dtype=np.uint16)
+
     # Convert UV coordinates to texture space (pixel coordinates)
-    texture_space_coords = np.empty((len(selected_uvs), 2), dtype=np.int32)
-    if len(wrapped_uvs) > 0:
-        texture_space_coords[:, 0] = (wrapped_uvs[:, 0] * width - 0.5).astype(np.int32)
-        texture_space_coords[:, 1] = (height - wrapped_uvs[:, 1] * height - 0.5).astype(np.int32)
+    texture_space_coords[:, 0] = (wrapped_uvs[:, 0] * (width - 0.5)).astype(np.uint16)
+    texture_space_coords[:, 1] = ((1 - wrapped_uvs[:, 1]) * (height - 0.5)).astype(np.uint16)
 
     return texture_space_coords

@@ -127,17 +127,25 @@ def test_get_overlapping_vertices_error_handling(indices):
         # Simple UV conversion with specific indices
         (np.array([[0.5, 0.5], [0.25, 0.75]]), 100, 100, np.array([0]), np.array([[49, 49]])),
         # Full range UV conversion without specific indices
-        (np.array([[0, 0], [1, 1]]), 200, 200, None, np.array([[0, 199], [199, 0]])),
+        (np.array([[0.0, 0.0], [1.0, 1.0]]), 200, 200, None, np.array([[0, 199], [199, 0]])),
         # Near 0 and 1 values
-        (np.array([[0.0001, 0.9999], [0.9999, 0.001]]), 200, 200, np.array([0, 1]), np.array([[0, 0], [199, 199]])),
+        (
+            np.array([[0.0001, 0.9999], [0.9999, 0.0001]]),
+            200,
+            200,
+            np.array([0, 1]),
+            np.array([[0, 0], [199, 199]]),
+        ),
         # Empty indices
         (np.array([[0.5, 0.5], [0.25, 0.75]]), 50, 50, np.array([]), np.empty((0, 2))),
         # UV coordinates out of range  (non square tex - negative values)
-        (np.array([[-0.5, 1.5], [1, -1]]), 10, 100, np.array([0, 1]), np.array([[4, 49], [9, 99]])),
+        (np.array([[-0.5, 1.5], [1.0, -1.0]]), 10, 100, np.array([0, 1]), np.array([[4, 49], [9, 99]])),
         # UV coordinates out of range (wrapped - negative values)
-        (np.array([[-0.25, 1.5], [-2, -1]]), 100, 100, np.array([0, 1]), np.array([[74, 49], [0, 99]])),
+        (np.array([[-0.25, 1.5], [-2.0, -1.0]]), 100, 100, np.array([0, 1]), np.array([[74, 49], [0, 99]])),
         # UV coordinates for non square
         (np.array([[0.5, 0.5], [0.25, 0.75]]), 124, 10024, np.array([0]), np.array([[61, 5011]])),
+        # 1px image
+        (np.array([[0.5, 0.5], [-1, 1], [0, 0]]), 1, 1, np.array([0, 1, 2]), np.array([[0, 0], [0, 0], [0, 0]])),
     ],
 )
 def test_uv_to_texture_space(uvs: UVs, width: int, height: int, indices: Indices, expected: PixelCoord):
