@@ -110,8 +110,8 @@ def uv_to_texture_space(
     """
     if indices is None:
         indices = np.arange(len(uvs), dtype=np.uint16)
-    elif len(indices) == 0:
-        indices = np.empty((0, 2), dtype=np.uint16)
+if not len(indices):
+    return np.empty((0, 2), dtype=np.unit16)
 
     try:
         selected_uvs = uvs if indices is None else uvs[indices]
