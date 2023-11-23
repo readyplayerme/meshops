@@ -114,10 +114,11 @@ def uv_to_texture_space(
         return np.empty((0, 2), dtype=np.uint16)
 
     try:
-        selected_uvs = uvs if indices is None else uvs[indices]
+        selected_uvs = uvs[indices]
     except IndexError as error:
         msg = f"Index {np.where(indices>=len(uvs))[0]} is out of bounds for UVs with shape {uvs.shape}."
         raise IndexError(msg) from error
+
     # Wrap UV coordinates within the range [0, 1]
     wrapped_uvs = np.mod(selected_uvs, 1)
 

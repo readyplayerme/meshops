@@ -146,6 +146,8 @@ def test_get_overlapping_vertices_error_handling(indices):
         (np.array([[0.5, 0.5], [0.25, 0.75]]), 124, 10024, np.array([0]), np.array([[61, 5011]])),
         # 1px image
         (np.array([[0.5, 0.5], [-1, 1], [0, 0]]), 1, 1, np.array([0, 1, 2]), np.array([[0, 0], [0, 0], [0, 0]])),
+        # 0 px image
+        (np.array([[0.5, 0.5], [0.25, 0.75]]), 0, 0, np.array([0]), np.array([[0, 0]])),
     ],
 )
 def test_uv_to_texture_space(uvs: UVs, width: int, height: int, indices: Indices, expected: PixelCoord):
@@ -158,6 +160,8 @@ def test_uv_to_texture_space(uvs: UVs, width: int, height: int, indices: Indices
     "uvs, width, height, indices",
     [
         (np.array([[0.5, 0.5], [0.25, 0.75]]), 100, 100, np.array([0, 1, 2])),
+        # No UV coord
+        (np.array([]), 1, 1, np.array([0, 1, 2])),
     ],
 )
 def test_uv_to_texture_space_exceptions(uvs: UVs, width: int, height: int, indices: Indices):
