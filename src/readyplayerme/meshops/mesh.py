@@ -6,7 +6,7 @@ import numpy as np
 import trimesh
 from scipy.spatial import cKDTree
 
-from readyplayerme.meshops.types import Edges, IndexGroups, Indices, Mesh, Vertices
+from readyplayerme.meshops.types import Color, Edges, IndexGroups, Indices, Mesh, Vertices
 
 
 def read_mesh(filename: str | Path) -> Mesh:
@@ -92,3 +92,35 @@ def get_overlapping_vertices(
             processed.update(neighbors)
 
     return grouped_indices
+
+
+def blend_colors(colors: Color, index_groups: IndexGroups) -> Color:
+    """Blends colors according to the given groups.
+
+    :param index_groups: A list of groups of indices.
+    :param vertex_colors: A list of colors .
+    :return: Array containing the blended colors .
+    """
+    if not isinstance(colors, np.ndarray):
+        msg = "colors must be a NumPy array"
+        raise ValueError(msg)
+    if not len(colors):
+        return np.array(colors)
+
+    blended_colors = np.copy(colors)
+    if not index_groups or index_groups == []:
+        return blended_colors
+
+    try:
+        colors[np.hstack(index_groups)]
+    except IndexError as error:
+        msg = f"Index out of bounds in index groups: {error}"
+
+        raise IndexError(msg) from error
+
+    # Blending process
+    for group in index_groups:
+        if len(group):
+            blended_colors[group] = np.mean(colors[group], axis=0)
+
+    return blended_colors

@@ -119,3 +119,51 @@ def test_get_overlapping_vertices_error_handling(indices):
     vertices = np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
     with pytest.raises(IndexError):
         mesh.get_overlapping_vertices(vertices, indices)
+
+
+@pytest.mark.parametrize(
+    "colors, index_groups, expected",
+    [
+        # Case with simple groups and distinct colors
+        (
+            np.array([[255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0]]),
+            [[0, 1], [2, 3]],
+            np.array([[127, 127, 0], [127, 127, 0], [127, 127, 127], [127, 127, 127]]),
+        ),
+        # Case with a single group
+        (
+            np.array([[100, 100, 100], [200, 200, 200]]),
+            [[0, 1]],
+            np.array([[150, 150, 150], [150, 150, 150]]),
+        ),
+        # Case with groups of 1 element
+        (
+            np.array([[100, 0, 0], [0, 100, 0], [0, 0, 100]]),
+            [[0], [1], [2]],
+            np.array([[100, 0, 0], [0, 100, 0], [0, 0, 100]]),
+        ),
+        # Case with empty colors array
+        (np.array([]), [[0, 1]], np.array([])),
+        # Case with empty groups
+        (np.array([[255, 0, 0], [0, 255, 0]]), [], np.array([[255, 0, 0], [0, 255, 0]])),
+    ],
+)
+def test_blend_colors(colors, index_groups, expected):
+    """Test the blend_colors function."""
+    blended_colors = mesh.blend_colors(colors, index_groups)
+    np.testing.assert_array_equal(blended_colors, expected)
+
+
+@pytest.mark.parametrize(
+    "colors, index_groups",
+    [
+        # Case with out-of-bounds indices
+        (np.array([[255, 0, 0], [0, 255, 0]]), [[0, 2]]),
+        # Case with negative index
+        (np.array([[255, 0, 0], [0, 255, 0]]), [[-3, 1]]),
+    ],
+)
+def test_blend_colors_error_handling(colors, index_groups):
+    """Test error handling in blend_colors function."""
+    with pytest.raises(IndexError):
+        mesh.blend_colors(colors, index_groups)
