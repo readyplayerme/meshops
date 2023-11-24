@@ -6,7 +6,7 @@ import numpy as np
 import trimesh
 from scipy.spatial import cKDTree
 
-from readyplayerme.meshops.types import Edges, IndexGroups, Indices, Mesh, Vertices
+from readyplayerme.meshops.types import Edges, IndexGroups, Indices, Mesh, PixelCoord, UVs, Vertices
 
 
 def read_mesh(filename: str | Path) -> Mesh:
@@ -92,3 +92,39 @@ def get_overlapping_vertices(
             processed.update(neighbors)
 
     return grouped_indices
+
+
+def uv_to_image_coords(
+    uvs: UVs,
+    width: int,
+    height: int,
+    indices: Indices | None = None,
+) -> PixelCoord:
+    """Convert UV coordinates to image space coordinates.
+
+    :param uvs: UV coordinates.
+    :param indices: Optional subset of UV indices for which to retrieve pixel coordinates.
+    :param width: Width of the image in pixels.
+    :param height: Height of the image in pixels.
+    :return: Coordinates in image space given the input width and height.
+    """
+    try:
+        selected_uvs = uvs if indices is None else uvs[indices]
+    except IndexError as error:
+        msg = f"Index {np.where(indices>=len(uvs))[0]} is out of bounds for UVs with shape {uvs.shape}."  # type: ignore
+        raise IndexError(msg) from error
+    if not len(selected_uvs):
+        return np.empty((0, 2), dtype=np.uint16)
+
+    # Wrap UV coordinates within the range [0, 1].
+    wrapped_uvs = np.mod(selected_uvs, 1)
+
+    # With wrapping, we keep the max 1 as 1 and not transpose into the next space.
+    wrapped_uvs[selected_uvs == 1] = 1
+
+    # Convert UV coordinates to texture space (pixel coordinates)
+    img_coords = np.empty((len(selected_uvs), 2), dtype=np.uint16)
+    img_coords[:, 0] = (wrapped_uvs[:, 0] * (width - 0.5)).astype(np.uint16)
+    img_coords[:, 1] = ((1 - wrapped_uvs[:, 1]) * (height - 0.5)).astype(np.uint16)
+
+    return img_coords
