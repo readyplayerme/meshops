@@ -137,7 +137,7 @@ def test_get_overlapping_vertices_error_handling(indices):
             np.array([[0, 0], [199, 199]]),
         ),
         # Empty indices
-        (np.array([[0.5, 0.5], [0.25, 0.75]]), 50, 50, np.array([]), np.empty((0, 2))),
+        (np.array([[0.5, 0.5], [0.25, 0.75]]), 50, 50, np.array([], dtype=np.uint8), np.empty((0, 2))),  # FixMe
         # UV coordinates out of range  (non square tex - negative values)
         (np.array([[-0.5, 1.5], [1.0, -1.0]]), 10, 100, np.array([0, 1]), np.array([[4, 49], [9, 99]])),
         # UV coordinates out of range (wrapped - negative values)
@@ -150,10 +150,10 @@ def test_get_overlapping_vertices_error_handling(indices):
         (np.array([[0.5, 0.5], [0.25, 0.75]]), 0, 0, np.array([0]), np.array([[0, 0]])),
     ],
 )
-def test_uv_to_texture_space(uvs: UVs, width: int, height: int, indices: Indices, expected: PixelCoord):
+def test_uv_to_image_coords(uvs: UVs, width: int, height: int, indices: Indices, expected: PixelCoord):
     """Test the uv_to_texture_space function returns the correct texture space coordinates."""
-    texture_space_coords = mesh.uv_to_texture_space(uvs, width, height, indices)
-    assert np.array_equal(texture_space_coords, expected), "Texture space coordinates do not match expected values."
+    image_space_coords = mesh.uv_to_image_coords(uvs, width, height, indices)
+    assert np.array_equal(image_space_coords, expected), "Image space coordinates do not match expected values."
 
 
 @pytest.mark.parametrize(
@@ -164,7 +164,7 @@ def test_uv_to_texture_space(uvs: UVs, width: int, height: int, indices: Indices
         (np.array([]), 1, 1, np.array([0, 1, 2])),
     ],
 )
-def test_uv_to_texture_space_exceptions(uvs: UVs, width: int, height: int, indices: Indices):
-    """Test the uv_to_texture_space function raises expected exceptions."""
+def test_uv_to_image_coords_exceptions(uvs: UVs, width: int, height: int, indices: Indices):
+    """Test the uv_to_image_space function raises expected exceptions."""
     with pytest.raises(IndexError):
-        mesh.uv_to_texture_space(uvs, width, height, indices)
+        mesh.uv_to_image_coords(uvs, width, height, indices)
