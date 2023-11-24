@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from readyplayerme.meshops import mesh
-from readyplayerme.meshops.types import IndexGroups, Indices, Mesh, Vertices
+from readyplayerme.meshops.types import IndexGroups, Indices, Mesh, PixelCoord, UVs, Vertices
 
 
 class TestReadMesh:
@@ -119,6 +119,55 @@ def test_get_overlapping_vertices_error_handling(indices):
     vertices = np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
     with pytest.raises(IndexError):
         mesh.get_overlapping_vertices(vertices, indices)
+
+
+@pytest.mark.parametrize(
+    "uvs, width, height, indices, expected",
+    [
+        # Simple UV conversion with specific indices
+        (np.array([[0.5, 0.5], [0.25, 0.75]]), 100, 100, np.array([0]), np.array([[49, 49]])),
+        # Full range UV conversion without specific indices
+        (np.array([[0.0, 0.0], [1.0, 1.0]]), 200, 200, None, np.array([[0, 199], [199, 0]])),
+        # Near 0 and 1 values
+        (
+            np.array([[0.0001, 0.9999], [0.9999, 0.0001]]),
+            200,
+            200,
+            np.array([0, 1]),
+            np.array([[0, 0], [199, 199]]),
+        ),
+        # Empty indices
+        (np.array([[0.5, 0.5], [0.25, 0.75]]), 50, 50, np.array([], dtype=np.uint8), np.empty((0, 2))),  # FixMe
+        # UV coordinates out of range  (non square tex - negative values)
+        (np.array([[-0.5, 1.5], [1.0, -1.0]]), 10, 100, np.array([0, 1]), np.array([[4, 49], [9, 99]])),
+        # UV coordinates out of range (wrapped - negative values)
+        (np.array([[-0.25, 1.5], [-2.0, -1.0]]), 100, 100, np.array([0, 1]), np.array([[74, 49], [0, 99]])),
+        # UV coordinates for non square
+        (np.array([[0.5, 0.5], [0.25, 0.75]]), 124, 10024, np.array([0]), np.array([[61, 5011]])),
+        # 1px image
+        (np.array([[0.5, 0.5], [-1, 1], [0, 0]]), 1, 1, np.array([0, 1, 2]), np.array([[0, 0], [0, 0], [0, 0]])),
+        # 0 px image
+        (np.array([[0.5, 0.5], [0.25, 0.75]]), 0, 0, np.array([0]), np.array([[0, 0]])),
+    ],
+)
+def test_uv_to_image_coords(uvs: UVs, width: int, height: int, indices: Indices, expected: PixelCoord):
+    """Test the uv_to_texture_space function returns the correct texture space coordinates."""
+    image_space_coords = mesh.uv_to_image_coords(uvs, width, height, indices)
+    assert np.array_equal(image_space_coords, expected), "Image space coordinates do not match expected values."
+
+
+@pytest.mark.parametrize(
+    "uvs, width, height, indices",
+    [
+        (np.array([[0.5, 0.5], [0.25, 0.75]]), 100, 100, np.array([0, 1, 2])),
+        # No UV coord
+        (np.array([]), 1, 1, np.array([0, 1, 2])),
+    ],
+)
+def test_uv_to_image_coords_exceptions(uvs: UVs, width: int, height: int, indices: Indices):
+    """Test the uv_to_image_space function raises expected exceptions."""
+    with pytest.raises(IndexError):
+        mesh.uv_to_image_coords(uvs, width, height, indices)
 
 
 @pytest.mark.parametrize(
