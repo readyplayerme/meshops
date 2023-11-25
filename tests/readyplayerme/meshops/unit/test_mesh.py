@@ -25,7 +25,7 @@ class TestReadMesh:
         assert reader == expected, "The reader function for .glTF files should be read_gltf."
 
     @pytest.mark.parametrize("filepath", ["test", "test.obj", Path("test.stl"), "test.fbx", "test.abc", "test.ply"])
-    def test_get_mesh_reader_unsupported(self, filepath: str | Path):
+    def test_get_mesh_reader_should_fail(self, filepath: str | Path):
         """Test the get_mesh_reader function with an unsupported file format."""
         with pytest.raises(NotImplementedError):
             mesh.get_mesh_reader(filepath)
@@ -114,7 +114,7 @@ def test_get_overlapping_vertices(
         np.array([0, -1], dtype=np.int32),  # Using int32 to allow negative values
     ],
 )
-def test_get_overlapping_vertices_error_handling(indices):
+def test_get_overlapping_vertices_should_fail(indices):
     """Test that get_overlapping_vertices function raises an exception for out of bounds indices."""
     vertices = np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
     with pytest.raises(IndexError):
@@ -164,7 +164,7 @@ def test_uv_to_image_coords(uvs: UVs, width: int, height: int, indices: Indices,
         (np.array([]), 1, 1, np.array([0, 1, 2])),
     ],
 )
-def test_uv_to_image_coords_exceptions(uvs: UVs, width: int, height: int, indices: Indices):
+def test_uv_to_image_coords_should_fail(uvs: UVs, width: int, height: int, indices: Indices):
     """Test the uv_to_image_space function raises expected exceptions."""
     with pytest.raises(IndexError):
         mesh.uv_to_image_coords(uvs, width, height, indices)
@@ -192,9 +192,11 @@ def test_uv_to_image_coords_exceptions(uvs: UVs, width: int, height: int, indice
             np.array([[100, 0, 0], [0, 100, 0], [0, 0, 100]]),
         ),
         # Case with empty colors array
-        (np.array([]), [[0, 1]], np.array([])),
+        (np.array([], dtype=np.uint8), [[0, 1]], np.array([])),
         # Case with empty groups
         (np.array([[255, 0, 0], [0, 255, 0]]), [], np.array([[255, 0, 0], [0, 255, 0]])),
+        # Case with empty colors and groups
+        (np.array([], dtype=np.uint8), [], np.array([], dtype=np.uint8)),
     ],
 )
 def test_blend_colors(colors, index_groups, expected):
@@ -212,7 +214,7 @@ def test_blend_colors(colors, index_groups, expected):
         (np.array([[255, 0, 0], [0, 255, 0]]), [[-3, 1]]),
     ],
 )
-def test_blend_colors_error_handling(colors, index_groups):
+def test_blend_colors_should_fail(colors, index_groups):
     """Test error handling in blend_colors function."""
     with pytest.raises(IndexError):
         mesh.blend_colors(colors, index_groups)
