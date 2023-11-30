@@ -1,10 +1,87 @@
-"""Unit tests for the rasterizer module."""
+"""Unit tests for the rasterize module."""
+
+import typing
 
 import numpy as np
 import pytest
 
 import readyplayerme.meshops.draw.rasterize as rast
 from readyplayerme.meshops.types import Color, Edges, Image, PixelCoord
+
+
+@pytest.mark.parametrize(
+    "input_segment, expected_output",
+    [
+        # All NaNs
+        (np.array([np.nan, np.nan, np.nan]), np.array([np.nan, np.nan, np.nan])),
+        # No NaNs
+        (np.array([1, 2, 3]), np.array([1, 2, 3])),
+        # Single Element
+        (np.array([1]), np.array([1])),
+        # Single NaN
+        (np.array([np.nan]), np.array([np.nan])),
+    ],
+)
+def test_interpolate_segment(input_segment, expected_output):
+    """Test the interpolate_segment function with various input scenarios."""
+    output = rast.interpolate_segment(input_segment)
+    np.testing.assert_array_equal(output, expected_output)
+
+
+@pytest.mark.parametrize(
+    "image_array, edges, image_coords, colors, interpolate_func, expected_output",
+    [
+        # Empty Edges with Mocked Data
+        (
+            np.zeros((5, 5, 3), dtype=np.uint8),
+            np.array([]),
+            np.array([[0, 0], [1, 1]]),
+            np.array([[255, 0, 0], [0, 255, 0]], dtype=np.uint8),
+            lambda color0, color1, steps: np.array([[100, 100, 100]] * steps, dtype=np.uint8),  # noqa: ARG005
+            np.zeros((5, 5, 3), dtype=np.uint8),
+        ),
+        # Non-Existent Edge Points with Mocked Data
+        (
+            np.zeros((5, 5, 3), dtype=np.uint8),
+            np.array([[0, 2]]),  # Edge from point 0 to point 2
+            np.array([[0, 0], [1, 1], [4, 4]]),  # Coordinates for the points
+            np.array([[255, 0, 0], [0, 255, 0], [200, 50, 50]], dtype=np.uint8),  # Colors for the points
+            lambda color0, color1, steps: np.array([[200, 50, 50]] * steps, dtype=np.uint8),  # noqa: ARG005
+            np.array(
+                [  # Expected output with a line drawn
+                    [[200, 50, 50], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                    [[0, 0, 0], [200, 50, 50], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                    [[0, 0, 0], [0, 0, 0], [200, 50, 50], [0, 0, 0], [0, 0, 0]],
+                    [[0, 0, 0], [0, 0, 0], [0, 0, 0], [200, 50, 50], [0, 0, 0]],
+                    [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [200, 50, 50]],
+                ],
+                dtype=np.uint8,
+            ),
+        ),
+        # Zero Length Lines with Mocked Data
+        (
+            np.zeros((5, 5, 3), dtype=np.uint8),
+            np.array([[0, 0]]),  # Start and end points are the same
+            np.array([[0, 0], [1, 1]]),  # Coordinates for the points
+            np.array([[255, 0, 0], [0, 255, 0]], dtype=np.uint8),  # Colors for the points
+            lambda color0, color1, steps: np.array([[50, 200, 200]] * steps, dtype=np.uint8),  # noqa: ARG005
+            np.array(
+                [  # Expected output with a single pixel drawn
+                    [[50, 200, 200], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                    [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                    [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                    [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                    [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                ],
+                dtype=np.uint8,
+            ),
+        ),
+    ],
+)
+def test_draw_lines(image_array, edges, image_coords, colors, interpolate_func, expected_output):
+    """Test draw_lines function with various edge cases."""
+    output = rast.draw_lines(image_array, edges, image_coords, colors, interpolate_func)
+    np.testing.assert_array_equal(output, expected_output)
 
 
 @pytest.mark.parametrize(
@@ -66,8 +143,8 @@ def test_vectorized_interpolate_failures(start_color, end_color, num_steps, expe
             np.array(
                 [
                     [1, 2, 3],
-                    [4, 5, np.nan],
-                    [np.nan, 7, 8],
+                    [4, 5, 5],
+                    [7, 7, 8],
                 ]
             ),
         ),
@@ -76,18 +153,26 @@ def test_vectorized_interpolate_failures(start_color, end_color, num_steps, expe
         # No NaNs in-between (no interpolation needed)
         (np.array([[1, 2, 3, 4, 5]]), np.array([[1, 2, 3, 4, 5]])),
         # NaNs only at the edges should remain as NaNs
-        (np.array([[np.nan, 1, 2, 3, np.nan]]), np.array([[np.nan, 1, 2, 3, np.nan]])),
+        (np.array([[np.nan, 1, 2, 3, np.nan]]), np.array([[1, 1, 2, 3, 3]])),
         # Single NaN in-between
         (np.array([[1, 2, np.nan, 4, 5]]), np.array([[1, 2, 3, 4, 5]])),
         # All NaNs except edges
         (np.array([[1, np.nan, np.nan, np.nan, 5]]), np.array([[1, 2, 3, 4, 5]])),
         # Single-Row Array with NaN in-between
         (np.array([1, np.nan, 3]), np.array([[1, 2, 3]])),
+        # Empty Arrays
+        (np.array([[]]), np.array([[]])),
+        # Single Element Arrays
+        (np.array([[1]]), np.array([[1]])),
+        # Arrays with No NaN Values
+        (np.array([[1, 2, 3], [4, 5, 6]]), np.array([[1, 2, 3], [4, 5, 6]])),
+        # All NaN Arrays
+        (np.array([[np.nan, np.nan], [np.nan, np.nan]]), np.array([[np.nan, np.nan], [np.nan, np.nan]])),
     ],
 )
-def test_lerp_nans_horizontally(input_array, expected_output):
-    """Test lerp_nans_horizontally function with various input scenarios."""
-    actual_output = rast.lerp_nans_horizontally(input_array)
+def test_vectorized_lerp_nans_vertically(input_array, expected_output):
+    """Test vectorized_lerp_nans_vertically function with various input scenarios."""
+    actual_output = rast.vectorized_lerp_nans_vertically(input_array)
     np.testing.assert_array_equal(actual_output, expected_output)
 
 
@@ -99,19 +184,19 @@ def test_lerp_nans_horizontally(input_array, expected_output):
         # Basic vertical interpolation multiple columns
         (
             np.array([[1, np.nan, 2], [np.nan, 3, np.nan], [3, np.nan, 4]]),
-            np.array([[1, np.nan, 2], [2, 3, 3], [3, np.nan, 4]]),
+            np.array([[1, 3, 2], [2, 3, 3], [3, 3, 4]]),
         ),
         # Edge cases
-        (np.array([[np.nan], [2], [3]]), np.array([[np.nan], [2], [3]])),
+        (np.array([[np.nan], [2], [3]]), np.array([[2], [2], [3]])),
         # Multiple columns with nan esges
-        (np.array([[1], [2], [np.nan]]), np.array([[1], [2], [np.nan]])),
+        (np.array([[1], [2], [np.nan]]), np.array([[1], [2], [2]])),
         (
             np.array([[1, np.nan, 3], [4, 5, np.nan], [np.nan, 7, 5]]),
             np.array(
                 [
-                    [1, np.nan, 3],
+                    [1, 5, 3],
                     [4, 5, 4],
-                    [np.nan, 7, 5],
+                    [4, 7, 5],
                 ]
             ),
         ),
@@ -122,18 +207,25 @@ def test_lerp_nans_horizontally(input_array, expected_output):
         # All NaNs
         (np.array([[np.nan], [np.nan], [np.nan]]), np.array([[np.nan], [np.nan], [np.nan]])),
         # Single-column Array
-        (np.array([1, np.nan, 3]), np.array([[1], [2], [3]])),  # Adjusted to be 2D for output
+        (np.array([1, np.nan, 3]), np.array([[1], [2], [3]])),
+        # Empty Arrays
+        (np.array([]), np.array([]).reshape(0, 1)),
+        # Single Element Arrays
+        (np.array([[1]]), np.array([[1]])),
+        # Arrays with No NaN Values
+        (np.array([[1, 2, 3], [4, 5, 6]]), np.array([[1, 2, 3], [4, 5, 6]])),
+        # All NaN Arrays
+        (np.array([[np.nan, np.nan], [np.nan, np.nan]]), np.array([[np.nan, np.nan], [np.nan, np.nan]])),
     ],
 )
-def test_lerp_nans_vertically(input_array, expected_output):
-    """Test lerp_nans_vertically function with various input scenarios."""
-    actual_output = rast.lerp_nans_vertically(input_array)
+def test_vectorized_lerp_nans_horizontally(input_array, expected_output):
+    """Test vectorized_lerp_nans_horizontally function with various input scenarios."""
+    actual_output = rast.vectorized_lerp_nans_horizontally(input_array)
     np.testing.assert_array_equal(actual_output, expected_output)
 
 
-# TODO mock functions with lambda
 @pytest.mark.parametrize(
-    "width, height, edges, image_coords, all_vertex_colors, expected_output",
+    "width, height, edges, image_coords, colors, interpolate_func, fill_func, expected_output",
     [
         # Basic Functionality
         (
@@ -142,7 +234,9 @@ def test_lerp_nans_vertically(input_array, expected_output):
             np.array([[0, 1]]),
             np.array([[1, 1], [4, 4]]),
             np.array([[255, 0, 0], [0, 255, 0]], dtype=np.uint8),
-            "mock_image",  # Define this based on your function's behavior
+            lambda color0, color1, steps: np.linspace(color0, color1, steps).astype(np.uint8),
+            lambda img: np.nan_to_num(img).astype(np.uint8),
+            "mock_image",
         ),
         # No Edges
         (
@@ -151,6 +245,8 @@ def test_lerp_nans_vertically(input_array, expected_output):
             np.array([]),
             np.array([]),
             np.array([]),
+            lambda color0, color1, steps: np.linspace(color0, color1, steps).astype(np.uint8),
+            lambda img: np.nan_to_num(img).astype(np.uint8),
             np.zeros((50, 50, 3), dtype=np.uint8),  # Expected blank image
         ),
         # Single Pixel Image
@@ -160,6 +256,8 @@ def test_lerp_nans_vertically(input_array, expected_output):
             np.array([[0, 0]]),
             np.array([[0, 0]]),
             np.array([[255, 0, 0]]),
+            lambda color0, color1, steps: np.linspace(color0, color1, steps).astype(np.uint8),
+            lambda img: np.nan_to_num(img).astype(np.uint8),
             np.array([[[255, 0, 0]]], dtype=np.float32),  # Expected output
         ),
         # More test cases...
@@ -170,7 +268,9 @@ def test_rasterize_valid(
     height: int,
     edges: Edges,
     image_coords: PixelCoord,
-    all_vertex_colors: Color,
+    colors: Color,
+    interpolate_func: typing.Callable[[Color, Color, int], Color],
+    fill_func: typing.Callable[[Image], Image],
     expected_output: Image,
     request: pytest.FixtureRequest,
 ):
@@ -182,26 +282,56 @@ def test_rasterize_valid(
         height,
         edges,
         image_coords,
-        all_vertex_colors,
-        rast.vectorized_interpolate,
-        rast.lerp_nans_horizontally,
+        colors,
+        interpolate_func,
+        fill_func,
     )
+
     np.testing.assert_array_equal(output, expected_output, err_msg="Rasterized image did not match expected output.")
 
 
-# TODO mock functions with lambda
 @pytest.mark.parametrize(
-    "width, height, edges, image_coords, all_vertex_colors, expected_exception",
+    "width, height, edges, image_coords, all_vertex_colors, interpolate_func, fill_func, expected_exception",
     [
         # Negative Dimensions
-        (-100, 100, np.array([[0, 1]]), np.array([[0, 0], [10, 10]]), np.array([[255, 0, 0], [0, 255, 0]]), ValueError),
+        (
+            -100,
+            100,
+            np.array([[0, 1]]),
+            np.array([[0, 0], [10, 10]]),
+            np.array([[255, 0, 0], [0, 255, 0]]),
+            lambda color0, color1, steps: np.linspace(color0, color1, steps).astype(np.uint8),  # Mock interpolate func
+            lambda img: np.nan_to_num(img).astype(np.uint8),  # Mock fill func
+            ValueError,
+        ),
         # Out of Bounds Edges
-        (100, 100, np.array([[0, 10]]), np.array([[10, 10]]), np.array([[255, 0, 0]]), IndexError),
+        (
+            100,
+            100,
+            np.array([[0, 10]]),
+            np.array([[10, 10]]),
+            np.array([[255, 0, 0]]),
+            lambda color0, color1, steps: np.linspace(color0, color1, steps).astype(np.uint8),  # Mock interpolate func
+            lambda img: np.nan_to_num(img).astype(np.uint8),  # Mock fill func
+            IndexError,
+        ),
         # Zero Dimensions
-        (0, 0, np.array([[0, 1]]), np.array([[0, 0], [10, 10]]), np.array([[255, 0, 0], [0, 255, 0]]), IndexError),
+        (
+            0,
+            0,
+            np.array([[0, 1]]),
+            np.array([[0, 0], [10, 10]]),
+            np.array([[255, 0, 0], [0, 255, 0]]),
+            lambda color0, color1, steps: np.linspace(color0, color1, steps).astype(np.uint8),  # Mock interpolate func
+            lambda img: np.nan_to_num(img).astype(np.uint8),  # Mock fill func
+            IndexError,
+        ),
+        # More test cases...
     ],
 )
-def test_rasterize_should_fail(width, height, edges, image_coords, all_vertex_colors, expected_exception):
+def test_rasterize_should_fail(
+    width, height, edges, image_coords, all_vertex_colors, interpolate_func, fill_func, expected_exception
+):
     """Test rasterize function with invalid inputs."""
     with pytest.raises(expected_exception):
         rast.rasterize(
@@ -210,6 +340,6 @@ def test_rasterize_should_fail(width, height, edges, image_coords, all_vertex_co
             edges,
             image_coords,
             all_vertex_colors,
-            rast.vectorized_interpolate,
-            rast.lerp_nans_horizontally,
+            interpolate_func,
+            fill_func,
         )

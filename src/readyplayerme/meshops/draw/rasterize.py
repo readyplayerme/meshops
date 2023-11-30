@@ -27,55 +27,113 @@ def vectorized_interpolate(start: Color, end: Color, num_steps: int) -> Color:
     return start[None, :] + t[:, None] * (end - start)
 
 
-def lerp_nans_vertically(image_array: Image) -> Image:
-    """Linearly interpolates over NaN values in a 2D array, vertically.
-
-    :param image_array: The array to interpolate over.
-    :return: The interpolated array.
+def interpolate_segment(segment: Image) -> Image:
     """
-    # If the input is 1D, make it 2D so we can iterate over columns.
+    Interpolate NaN values in a 1D numpy array.
+
+    This function linearly interpolates NaN values in the provided array using the nearest non-NaN values.
+    Edge NaNs are filled with the nearest valid values.
+
+    :param segment: A 1D NumPy array containing numerical values, where some might be NaN. This 'segment'
+    could be a row or a column from a 2D array.
+    :return: A 1D NumPy array where NaN values have been replaced by interpolated values
+    based on adjacent non-NaN elements.
+    """
+    nan_mask = np.isnan(segment)
+
+    # Return early if no NaNs are present
+    if not np.any(nan_mask):
+        return segment
+
+    # Return as-is if all values are NaN
+    if nan_mask.all():
+        return segment
+
+    x = np.arange(segment.size)
+    valid_x = x[~nan_mask]
+    valid_segment = segment[~nan_mask]
+    # For edge NaNs, use the nearest valid values
+    left_value = valid_segment[0] if len(valid_segment) > 0 else np.nan
+    right_value = valid_segment[-1] if len(valid_segment) > 0 else np.nan
+
+    return np.interp(x, valid_x, valid_segment, left=left_value, right=right_value)
+
+
+def vectorized_lerp_nans_horizontally(image_array: Image) -> Image:
+    """
+    Linearly interpolates over NaN values in a 2D array, horizontally.
+
+    This function applies linear interpolation across each row of the array, filling NaN values based on adjacent
+    non-NaN elements in the same row. Edge NaNs in a row are filled with the nearest valid values in that row.
+
+    :param image_array: A 2D NumPy array to interpolate over. Each row of the array is processed separately.
+    :return: A 2D NumPy array with NaN values in each row replaced by interpolated values.
+    """
     if image_array.ndim == 1:
         image_array = image_array[:, np.newaxis]
 
-    nan_mask = np.isnan(image_array)
-    for col in range(image_array.shape[1]):
-        col_data = image_array[:, col]
-        nan_indices = np.where(nan_mask[:, col])[0]
-        valid_indices = np.where(~nan_mask[:, col])[0]
-
-        # Check if there are valid points to interpolate from
-        if len(valid_indices) == 0 or len(nan_indices) == 0:
-            continue  # No valid data in this column to interpolate from
-
-        image_array[nan_indices, col] = np.interp(
-            nan_indices, valid_indices, col_data[valid_indices], left=np.nan, right=np.nan
-        )
-    return image_array
+    return np.apply_along_axis(interpolate_segment, 0, image_array)
 
 
-def lerp_nans_horizontally(image_array: Image) -> Image:
+def vectorized_lerp_nans_vertically(image_array: Image) -> Image:
     """Linearly interpolates over NaN values in a 2D array, vertically.
 
     :param image_array: The array to interpolate over.
     :return: The interpolated array.
     """
-    # If the input is 1D, make it 2D so we can iterate over rows.
     if image_array.ndim == 1:
         image_array = image_array[np.newaxis, :]
 
-    nan_mask = np.isnan(image_array)
-    for row in range(image_array.shape[0]):
-        row_data = image_array[row, :]
-        nan_indices = np.where(nan_mask[row, :])[0]
-        valid_indices = np.where(~nan_mask[row, :])[0]
+    return np.apply_along_axis(interpolate_segment, 1, image_array)
 
-        # Check if there are valid points to interpolate from
-        if len(valid_indices) == 0 or len(nan_indices) == 0:
-            continue  # No valid data in this row to interpolate from
 
-        image_array[row, nan_indices] = np.interp(
-            nan_indices, valid_indices, row_data[valid_indices], left=np.nan, right=np.nan
+def create_nan_image_array(width: int, height: int) -> Image:
+    """
+    Create an image array filled with NaN values.
+
+    :param width: Width of the image in pixels.
+    :param height: Height of the image in pixels.
+    :return: A NumPy array of shape (height, width, 3) filled with NaN values.
+    """
+    try:
+        return np.full((height, width, 3), np.nan, dtype=np.float32)
+    except ValueError as error:
+        msg = "Width and height must be positive integers"
+        raise ValueError(msg) from error
+
+
+def draw_lines(
+    image_array: Image,
+    edges: Edges,
+    image_coords: PixelCoord,
+    colors: Color,
+    interpolate_func: typing.Callable[[Color, Color, int], Color],
+) -> Image:
+    """
+    Draw lines with color interpolation on an image array.
+
+    :param image_array: The image array to draw lines on.
+    :param edges: List of tuples representing the start and end points of the edges.
+    :param image_coords: Texture coordinates for the edges.
+    :param colors: Array of colors for the vertices.
+    :param interpolate_func: Function to interpolate colors.
+    :return: Image array with interpolated lines.
+    """
+    for edge in edges:
+        if any(idx >= len(colors) for idx in edge):
+            continue
+        color0, color1 = colors[edge].astype(np.float32)
+
+        rr, cc = skimage.draw.line(
+            image_coords[edge[0]][1], image_coords[edge[0]][0], image_coords[edge[1]][1], image_coords[edge[1]][0]
         )
+
+        if len(rr) == 0:
+            continue
+
+        color_steps = interpolate_func(color0, color1, len(rr))
+        image_array[rr, cc] = color_steps
+
     return image_array
 
 
@@ -96,7 +154,7 @@ def rasterize(
     :param edges: List of tuples representing the start and end points of the edges.
     :param image_coords: Texture coordinates for the edges.
     :param colors: Array of colors for the vertices.
-    :param interpolate_func: Function to interpolate colors.
+    :param interpolate_func: Function to interpolate values(colors, normals, etc..) between the 2 points.
     :param fill_func: Function to fill NaN values.
     :return: Image array with interpolated lines and filled values.
     """
@@ -119,32 +177,10 @@ def rasterize(
         )
         raise IndexError(msg) from error
 
-    # TODO make a function out of this for creating a Nan_image_array()
-    try:
-        # Perform an operation that naturally raises an exception for invalid dimensions
-        np.empty((height, width, 3))
-    except ValueError as error:
-        msg = "Width and height must be positive integers"
-        raise ValueError(msg) from error
-    image_array = np.full((height, width, 3), np.nan, dtype=np.float32)
+    image_array = create_nan_image_array(width, height)
+    image_array = draw_lines(image_array, edges, image_coords, colors, interpolate_func)
+    image_array = fill_func(image_array)
 
-    # TODO make a function draw_lines(edge,colors,image_coords) (have a method and interpolator injection)
-    for edge in edges:
-        color0, color1 = colors[edge].astype(np.float32)
-
-        rr, cc = skimage.draw.line(
-            image_coords[edge[0]][1], image_coords[edge[0]][0], image_coords[edge[1]][1], image_coords[edge[1]][0]
-        )
-
-        if len(rr) == 0:
-            continue
-
-        color_steps = interpolate_func(color0, color1, len(rr))
-        image_array[rr, cc] = color_steps
-
-    # TODO make a function
-    for channel in range(image_array.shape[2]):
-        image_array[:, :, channel] = fill_func(image_array[:, :, channel])
     # Replace infinities and ensure values are in the valid range before type conversion
     image_array = np.nan_to_num(image_array, nan=0)
     image_array = np.where(np.isinf(image_array), np.nanmax(image_array[np.isfinite(image_array)]), image_array)
