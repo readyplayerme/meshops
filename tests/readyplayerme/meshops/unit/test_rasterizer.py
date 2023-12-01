@@ -20,6 +20,16 @@ from readyplayerme.meshops.types import Color, Edges, Image, PixelCoord
         (np.array([1]), np.array([1])),
         # Single NaN
         (np.array([np.nan]), np.array([np.nan])),
+        # Interpolation with NaNs in the middle
+        (np.array([1, np.nan, 3]), np.array([1, 2, 3])),
+        # Interpolation with multiple NaNs
+        (np.array([1, np.nan, np.nan, 4]), np.array([1, 2, 3, 4])),
+        # NaN at the beginning
+        (np.array([np.nan, 2, 3]), np.array([2, 2, 3])),
+        # NaN at the end
+        (np.array([1, 2, np.nan]), np.array([1, 2, 2])),
+        # NaNs at both ends
+        (np.array([np.nan, 2, np.nan]), np.array([2, 2, 2])),
     ],
 )
 def test_interpolate_segment(input_segment, expected_output):
@@ -39,6 +49,42 @@ def test_interpolate_segment(input_segment, expected_output):
             np.array([[255, 0, 0], [0, 255, 0]], dtype=np.uint8),
             lambda color0, color1, steps: np.array([[100, 100, 100]] * steps, dtype=np.uint8),  # noqa: ARG005
             np.zeros((5, 5, 3), dtype=np.uint8),
+        ),
+        # Test with RGBA image
+        (
+            np.zeros((5, 5, 4), dtype=np.uint8),  # RGBA image array
+            np.array([[0, 1]]),  # Edge from point 0 to point 1
+            np.array([[0, 0], [4, 4]]),  # Coordinates for the points
+            np.array([[255, 0, 0, 128], [0, 255, 0, 255]], dtype=np.uint8),  # Colors for the points (RGBA)
+            lambda color0, color1, steps: np.array([[127, 127, 0, 191]] * steps, dtype=np.uint8),  # noqa: ARG005
+            np.array(
+                [
+                    [[127, 127, 0, 191], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+                    [[0, 0, 0, 0], [127, 127, 0, 191], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+                    [[0, 0, 0, 0], [0, 0, 0, 0], [127, 127, 0, 191], [0, 0, 0, 0], [0, 0, 0, 0]],
+                    [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [127, 127, 0, 191], [0, 0, 0, 0]],
+                    [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [127, 127, 0, 191]],
+                ],
+                dtype=np.uint8,
+            ),
+        ),
+        # Test with grayscale image
+        (
+            np.zeros((5, 5), dtype=np.uint8),  # Grayscale image array
+            np.array([[0, 1]]),  # Edge from point 0 to point 1
+            np.array([[0, 0], [4, 4]]),  # Coordinates for the points
+            np.array([[0], [255]], dtype=np.uint8),  # Colors for the points (grayscale)
+            lambda color0, color1, steps: np.array([128] * steps, dtype=np.uint8),  # noqa: ARG005
+            np.array(
+                [
+                    [128, 0, 0, 0, 0],
+                    [0, 128, 0, 0, 0],
+                    [0, 0, 128, 0, 0],
+                    [0, 0, 0, 128, 0],
+                    [0, 0, 0, 0, 128],
+                ],
+                dtype=np.uint8,
+            ),
         ),
         # Non-Existent Edge Points with Mocked Data
         (
@@ -94,6 +140,20 @@ def test_draw_lines(image_array, edges, image_coords, colors, interpolate_func, 
             3,
             np.array([[255.0, 0.0, 0.0], [127.5, 0.0, 127.5], [0.0, 0.0, 255.0]]),
         ),
+        # Interpolation from RGBA red to RGBA blue (with alpha channel)
+        (
+            np.array([255, 0, 0, 0.5]),  # Start color: Red with half opacity
+            np.array([0, 0, 255, 1.0]),  # End color: Blue with full opacity
+            3,
+            np.array([[255.0, 0.0, 0.0, 0.5], [127.5, 0.0, 127.5, 0.75], [0.0, 0.0, 255.0, 1.0]]),
+        ),
+        # Interpolation in grayscale
+        (
+            np.array([0]),  # Start color: Black in grayscale
+            np.array([255]),  # End color: White in grayscale
+            3,
+            np.array([[0], [127.5], [255]]),  # Intermediate grayscale values
+        ),
         # Interpolation with more steps
         (
             np.array([255, 0, 0]),
@@ -109,9 +169,9 @@ def test_draw_lines(image_array, edges, image_coords, colors, interpolate_func, 
         (np.array([0, 255, 0]), np.array([0, 0, 255]), 2, np.array([[0, 255, 0], [0, 0, 255]])),
     ],
 )
-def test_interpolate_points(start_color, end_color, num_steps, expected_output):
+def test_interpolate_values(start_color, end_color, num_steps, expected_output):
     """Test the vectorized_interpolate function with various input scenarios."""
-    actual_output = rast.interpolate_points(start_color, end_color, num_steps)
+    actual_output = rast.interpolate_values(start_color, end_color, num_steps)
     np.testing.assert_array_almost_equal(actual_output, expected_output, decimal=5)
 
 
@@ -126,10 +186,10 @@ def test_interpolate_points(start_color, end_color, num_steps, expected_output):
         ("255, 0, 0", np.array([0, 0, 255]), 3, AttributeError),
     ],
 )
-def test_interpolate_points_should_fail(start_color, end_color, num_steps, expected_exception):
+def test_interpolate_values_should_fail(start_color, end_color, num_steps, expected_exception):
     """Test the vectorized_interpolate function with invalid input scenarios."""
     with pytest.raises(expected_exception):
-        rast.interpolate_points(start_color, end_color, num_steps)
+        rast.interpolate_values(start_color, end_color, num_steps)
 
 
 @pytest.mark.parametrize(
@@ -225,121 +285,186 @@ def test_lerp_nans_vertically(input_array, expected_output):
 
 
 @pytest.mark.parametrize(
-    "width, height, edges, image_coords, colors, interpolate_func, fill_func, expected_output",
+    "width, height",
+    [
+        (100, 100),  # Typical usage
+    ],
+)
+def test_create_nan_image_array(width, height):
+    """Test the create_nan_image_array function with valid inputs."""
+    result = rast.create_nan_image_array(width, height)
+    assert result.shape == (height, width, 3)
+    assert np.isnan(result).all()
+
+
+@pytest.mark.parametrize(
+    "width, height, error",
+    [
+        (0, 100, ValueError),  # Zero width
+        (100, 0, ValueError),  # Zero height
+        (-100, 100, ValueError),  # Negative width
+        (100, -100, ValueError),  # Negative height
+        (100.5, 100, TypeError),  # Float width
+        (100, 100.5, TypeError),  # Float height
+    ],
+)
+def test_create_nan_image_array_should_fail(width, height, error):
+    """Test the create_nan_image_array function with invalid inputs."""
+    with pytest.raises(error):
+        rast.create_nan_image_array(width, height)
+
+
+@pytest.mark.parametrize(
+    "input_array, expected_output",
+    [
+        # No NaNs or Infinities
+        (np.array([[100, 150], [200, 250]], dtype=np.float32), np.array([[100, 150], [200, 250]], dtype=np.float32)),
+        # Contains NaNs
+        (np.array([[np.nan, 150], [200, np.nan]], dtype=np.float32), np.array([[0, 150], [200, 0]], dtype=np.float32)),
+        # Contains Positive and Negative Infinities
+        (
+            np.array([[np.inf, -np.inf], [200, 300]], dtype=np.float32),
+            np.array([[255, 0], [200, 255]], dtype=np.float32),
+        ),
+        # Mix of NaNs and Infinities
+        (
+            np.array([[np.nan, -np.inf], [np.inf, np.nan]], dtype=np.float32),
+            np.array([[0, 0], [255, 0]], dtype=np.float32),
+        ),
+        # Values Exceeding the Range [0, 255]
+        (np.array([[300, -100], [500, 600]], dtype=np.float32), np.array([[255, 0], [255, 255]], dtype=np.float32)),
+    ],
+)
+def test_image_nan_cleanup(input_array, expected_output):
+    """Test the image_nan_cleanup function with various input scenarios."""
+    output = rast.image_nan_cleanup(input_array)
+    np.testing.assert_array_equal(output, expected_output)
+
+
+@pytest.mark.parametrize(
+    "image_array, edges, image_coords, colors, interpolate_func, fill_func, cleanup, expected_output",
     [
         # Basic Functionality
         (
-            6,
-            6,
+            np.full((6, 6, 3), np.nan, dtype=np.float32),
             np.array([[0, 1]]),
             np.array([[1, 1], [4, 4]]),
             np.array([[255, 0, 0], [0, 255, 0]], dtype=np.uint8),
             lambda c0, c1, steps: np.linspace(c0, c1, steps).astype(np.uint8),
             lambda img: np.nan_to_num(img).astype(np.uint8),
+            lambda img: np.nan_to_num(img).astype(np.uint8),
+            "mock_image",
+        ),
+        # No Cleanup Case
+        (
+            np.full((6, 6, 3), np.nan, dtype=np.float32),
+            np.array([[0, 1]]),
+            np.array([[1, 1], [4, 4]]),
+            np.array([[255, 0, 0], [0, 255, 0]], dtype=np.uint8),
+            lambda c0, c1, steps: np.linspace(c0, c1, steps).astype(np.uint8),
+            lambda img: np.nan_to_num(img).astype(np.uint8),
+            None,  # No cleanup
             "mock_image",
         ),
         # No Edges
         (
-            50,
-            50,
+            np.full((50, 50, 3), np.nan, dtype=np.float32),
             np.array([]),
             np.array([]),
             np.array([]),
-            lambda color0, color1, steps: np.linspace(color0, color1, steps).astype(np.uint8),
+            lambda c0, c1, steps: np.linspace(c0, c1, steps).astype(np.uint8),
             lambda img: np.nan_to_num(img).astype(np.uint8),
-            np.zeros((50, 50, 3), dtype=np.uint8),  # Expected blank image
+            lambda img: np.nan_to_num(img).astype(np.uint8),
+            np.zeros((50, 50, 3), dtype=np.uint8),
         ),
         # Single Pixel Image
         (
-            1,
-            1,
+            np.full((1, 1, 3), np.nan, dtype=np.float32),
             np.array([[0, 0]]),
             np.array([[0, 0]]),
             np.array([[255, 0, 0]]),
-            lambda color0, color1, steps: np.linspace(color0, color1, steps).astype(np.uint8),
+            lambda c0, c1, steps: np.linspace(c0, c1, steps).astype(np.uint8),
             lambda img: np.nan_to_num(img).astype(np.uint8),
-            np.array([[[255, 0, 0]]], dtype=np.float32),  # Expected output
+            lambda img: np.nan_to_num(img).astype(np.uint8),
+            np.array([[[255, 0, 0]]], dtype=np.float32),
         ),
-        # More test cases...
     ],
 )
 def test_rasterize(
-    width: int,
-    height: int,
+    image_array: Image,
     edges: Edges,
     image_coords: PixelCoord,
     colors: Color,
     interpolate_func: typing.Callable[[Color, Color, int], Color],
     fill_func: typing.Callable[[Image], Image],
+    cleanup: typing.Callable[[Image], Image] | None,
     expected_output: Image,
     request: pytest.FixtureRequest,
 ):
     """Test rasterize function with valid inputs."""
     if isinstance(expected_output, str) and expected_output == "mock_image":
-        expected_output = request.getfixturevalue("mock_image").mock_rasterized_image
+        expected_output = request.getfixturevalue("mocked_image_diagonal_line_rgb")
     output = rast.rasterize(
-        width,
-        height,
+        image_array,
         edges,
         image_coords,
         colors,
         interpolate_func,
         fill_func,
+        cleanup,
     )
 
     np.testing.assert_array_equal(output, expected_output, err_msg="Rasterized image did not match expected output.")
 
 
 @pytest.mark.parametrize(
-    "width, height, edges, image_coords, all_vertex_colors, interpolate_func, fill_func, expected_exception",
+    "image_array, edges, image_coords, colors, interpolate_func, fill_func, cleanup, expected_exception",
     [
-        # Negative Dimensions
-        (
-            -100,
-            100,
-            np.array([[0, 1]]),
-            np.array([[0, 0], [10, 10]]),
-            np.array([[255, 0, 0], [0, 255, 0]]),
-            lambda color0, color1, steps: np.linspace(color0, color1, steps).astype(np.uint8),  # Mock interpolate func
-            lambda img: np.nan_to_num(img).astype(np.uint8),  # Mock fill func
-            ValueError,
-        ),
         # Out of Bounds Edges
         (
-            100,
-            100,
+            np.full((100, 100, 3), np.nan, dtype=np.float32),
             np.array([[0, 10]]),
             np.array([[10, 10]]),
             np.array([[255, 0, 0]]),
             lambda color0, color1, steps: np.linspace(color0, color1, steps).astype(np.uint8),  # Mock interpolate func
-            lambda img: np.nan_to_num(img).astype(np.uint8),  # Mock fill func
+            lambda img: np.nan_to_num(img).astype(np.uint8),
+            lambda img: np.nan_to_num(img).astype(np.uint8),
             IndexError,
         ),
         # Zero Dimensions
         (
-            0,
-            0,
+            np.full((0, 0, 3), np.nan, dtype=np.float32),
             np.array([[0, 1]]),
             np.array([[0, 0], [10, 10]]),
             np.array([[255, 0, 0], [0, 255, 0]]),
-            lambda color0, color1, steps: np.linspace(color0, color1, steps).astype(np.uint8),  # Mock interpolate func
-            lambda img: np.nan_to_num(img).astype(np.uint8),  # Mock fill func
+            lambda color0, color1, steps: np.linspace(color0, color1, steps).astype(np.uint8),
+            lambda img: np.nan_to_num(img).astype(np.uint8),
+            lambda img: np.nan_to_num(img).astype(np.uint8),
             IndexError,
         ),
-        # More test cases...
+        # Mismatched Array Sizes
+        (
+            np.full((10, 10, 3), np.nan, dtype=np.float32),
+            np.array([[0, 1], [2, 3]]),  # Two edges defined
+            np.array([[0, 0], [1, 1]]),  # Only two coordinates provided
+            np.array([[255, 0, 0], [0, 255, 0], [0, 0, 255]]),  # Three colors provided
+            lambda c0, c1, steps: np.linspace(c0, c1, steps).astype(np.uint8),
+            lambda img: np.nan_to_num(img).astype(np.uint8),
+            lambda img: np.nan_to_num(img).astype(np.uint8),
+            IndexError,
+        ),
     ],
 )
 def test_rasterize_should_fail(
-    width, height, edges, image_coords, all_vertex_colors, interpolate_func, fill_func, expected_exception
+    image_array: Image,
+    edges: Edges,
+    image_coords: PixelCoord,
+    colors: Color,
+    interpolate_func: typing.Callable[[Color, Color, int], Color],
+    fill_func: typing.Callable[[Image], Image],
+    cleanup: typing.Callable[[Image], Image] | None,
+    expected_exception: type[Exception],
 ):
     """Test rasterize function with invalid inputs."""
     with pytest.raises(expected_exception):
-        rast.rasterize(
-            width,
-            height,
-            edges,
-            image_coords,
-            all_vertex_colors,
-            interpolate_func,
-            fill_func,
-        )
+        rast.rasterize(image_array, edges, image_coords, colors, interpolate_func, fill_func, cleanup)

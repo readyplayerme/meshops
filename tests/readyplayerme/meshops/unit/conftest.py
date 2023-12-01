@@ -94,23 +94,20 @@ def mock_mesh():
     return MockMesh(vertices=vertices, edges=edges, faces=faces)
 
 
+mock_rasterized_image_1_line_diagonal_lerped_colors_rgb = np.array(
+    [
+        [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        [[0, 0, 0], [255, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        [[0, 0, 0], [0, 0, 0], [170, 85, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        [[0, 0, 0], [0, 0, 0], [0, 0, 0], [85, 170, 0], [0, 0, 0], [0, 0, 0]],
+        [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 255, 0], [0, 0, 0]],
+        [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+    ],
+    dtype=np.uint8,
+)
+
+
 @pytest.fixture
-def mock_image():
-    """Return a mocked instance of an image."""
-
-    @dataclass
-    class MockImage:
-        mock_rasterized_image: npt.NDArray[np.uint8]
-
-    mock_rasterized_image = np.array(
-        [
-            [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-            [[0, 0, 0], [255, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-            [[0, 0, 0], [0, 0, 0], [170, 85, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-            [[0, 0, 0], [0, 0, 0], [0, 0, 0], [85, 170, 0], [0, 0, 0], [0, 0, 0]],
-            [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 255, 0], [0, 0, 0]],
-            [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-        ],
-        dtype=np.uint8,
-    )
-    return MockImage(mock_rasterized_image=mock_rasterized_image)
+def mocked_image_diagonal_line_rgb():
+    """Return mocked image for 1_line_diagonal_lerped_colors_rgb."""
+    return mock_rasterized_image_1_line_diagonal_lerped_colors_rgb
