@@ -73,9 +73,9 @@ def lerp_nans_horizontally(image_array: Image) -> Image:
     :return: A 2D NumPy array with NaN values in each row replaced by interpolated values.
     """
     if image_array.ndim == 1:
-        image_array = image_array[:, np.newaxis]
+        image_array = image_array[np.newaxis, :]
 
-    return np.apply_along_axis(interpolate_segment, 0, image_array)
+    return np.apply_along_axis(interpolate_segment, 1, image_array)
 
 
 def lerp_nans_vertically(image_array: Image) -> Image:
@@ -85,9 +85,9 @@ def lerp_nans_vertically(image_array: Image) -> Image:
     :return: The interpolated array.
     """
     if image_array.ndim == 1:
-        image_array = image_array[np.newaxis, :]
+        image_array = image_array[:, np.newaxis]
 
-    return np.apply_along_axis(interpolate_segment, 1, image_array)
+    return np.apply_along_axis(interpolate_segment, 0, image_array)
 
 
 def create_nan_image_array(width: int, height: int) -> Image:

@@ -170,9 +170,9 @@ def test_interpolate_points_should_fail(start_color, end_color, num_steps, expec
         (np.array([[np.nan, np.nan], [np.nan, np.nan]]), np.array([[np.nan, np.nan], [np.nan, np.nan]])),
     ],
 )
-def test_lerp_nans_vertically(input_array, expected_output):
+def test_lerp_nans_horizontally(input_array, expected_output):
     """Test vectorized_lerp_nans_vertically function with various input scenarios."""
-    actual_output = rast.lerp_nans_vertically(input_array)
+    actual_output = rast.lerp_nans_horizontally(input_array)
     np.testing.assert_array_equal(actual_output, expected_output)
 
 
@@ -218,9 +218,9 @@ def test_lerp_nans_vertically(input_array, expected_output):
         (np.array([[np.nan, np.nan], [np.nan, np.nan]]), np.array([[np.nan, np.nan], [np.nan, np.nan]])),
     ],
 )
-def test_lerp_nans_horizontally(input_array, expected_output):
+def test_lerp_nans_vertically(input_array, expected_output):
     """Test vectorized_lerp_nans_horizontally function with various input scenarios."""
-    actual_output = rast.lerp_nans_horizontally(input_array)
+    actual_output = rast.lerp_nans_vertically(input_array)
     np.testing.assert_array_equal(actual_output, expected_output)
 
 
