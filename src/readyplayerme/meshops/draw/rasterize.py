@@ -6,9 +6,12 @@ import skimage
 from readyplayerme.meshops.types import Color, Edges, Image, PixelCoord
 
 
-def vectorized_interpolate(start: Color, end: Color, num_steps: int) -> Color:
+def interpolate_points(start: Color, end: Color, num_steps: int) -> Color:
     """
-    Vectorized custom interpolator using NumPy.
+    Return an array with interpolated values between start and end.
+
+    The array includes start and end values and is of length num_steps+2, with the first element being start,
+    and the last being end, and in between elements are linearly interpolated between these values.
 
     :param start: The starting value(s) for interpolation.
     :param end: The ending value(s) for interpolation.
@@ -59,7 +62,7 @@ def interpolate_segment(segment: Image) -> Image:
     return np.interp(x, valid_x, valid_segment, left=left_value, right=right_value)
 
 
-def vectorized_lerp_nans_horizontally(image_array: Image) -> Image:
+def lerp_nans_horizontally(image_array: Image) -> Image:
     """
     Linearly interpolates over NaN values in a 2D array, horizontally.
 
@@ -75,7 +78,7 @@ def vectorized_lerp_nans_horizontally(image_array: Image) -> Image:
     return np.apply_along_axis(interpolate_segment, 0, image_array)
 
 
-def vectorized_lerp_nans_vertically(image_array: Image) -> Image:
+def lerp_nans_vertically(image_array: Image) -> Image:
     """Linearly interpolates over NaN values in a 2D array, vertically.
 
     :param image_array: The array to interpolate over.
@@ -113,25 +116,27 @@ def draw_lines(
     Draw lines with color interpolation on an image array.
 
     :param image_array: The image array to draw lines on.
-    :param edges: List of tuples representing the start and end points of the edges.
+    :param edges: List of tuples representing the start and end indices of the edges
+    from the image_coords and colors array.
     :param image_coords: Texture coordinates for the edges.
-    :param colors: Array of colors for the vertices.
+    :param colors: Array of colors.
     :param interpolate_func: Function to interpolate colors.
     :return: Image array with interpolated lines.
     """
     for edge in edges:
-        if any(idx >= len(colors) for idx in edge):
+        try:
+            color0, color1 = colors[edge].astype(np.float32)
+        except IndexError:
             continue
-        color0, color1 = colors[edge].astype(np.float32)
 
         rr, cc = skimage.draw.line(
             image_coords[edge[0]][1], image_coords[edge[0]][0], image_coords[edge[1]][1], image_coords[edge[1]][0]
         )
 
-        if len(rr) == 0:
+        if not (rr_length := len(rr)):
             continue
 
-        color_steps = interpolate_func(color0, color1, len(rr))
+        color_steps = interpolate_func(color0, color1, rr_length)
         image_array[rr, cc] = color_steps
 
     return image_array
