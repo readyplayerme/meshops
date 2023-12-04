@@ -94,20 +94,33 @@ def mock_mesh():
     return MockMesh(vertices=vertices, edges=edges, faces=faces)
 
 
-mock_rasterized_image_1_line_diagonal_lerped_colors_rgb = np.array(
-    [
-        [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[0, 0, 0], [255, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[0, 0, 0], [0, 0, 0], [170, 85, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-        [[0, 0, 0], [0, 0, 0], [0, 0, 0], [85, 170, 0], [0, 0, 0], [0, 0, 0]],
-        [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 255, 0], [0, 0, 0]],
-        [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-    ],
-    dtype=np.uint8,
-)
+@pytest.fixture
+def mocked_image_diagonal_line_rgb():
+    """Return an image with 1 diagonal line of lerped rgb colors."""
+    return np.array(
+        [
+            [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+            [[0, 0, 0], [255, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+            [[0, 0, 0], [0, 0, 0], [170, 85, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+            [[0, 0, 0], [0, 0, 0], [0, 0, 0], [85, 170, 0], [0, 0, 0], [0, 0, 0]],
+            [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 255, 0], [0, 0, 0]],
+            [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        ],
+        dtype=np.uint8,
+    )
 
 
 @pytest.fixture
-def mocked_image_diagonal_line_rgb():
-    """Return mocked image for 1_line_diagonal_lerped_colors_rgb."""
-    return mock_rasterized_image_1_line_diagonal_lerped_colors_rgb
+def mocked_image_diagonal_line_grayscale():
+    """Return an image with 1 diagonal line of lerped grayscale colors."""
+    return np.array(
+        [
+            [0, 0, 0, 0, 0, 0],
+            [0, 255, 0, 0, 0, 0],
+            [0, 0, 191, 0, 0, 0],
+            [0, 0, 0, 127, 0, 0],
+            [0, 0, 0, 0, 63, 0],
+            [0, 0, 0, 0, 0, 0],
+        ],
+        dtype=np.uint8,
+    )
