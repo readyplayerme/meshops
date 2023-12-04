@@ -1,4 +1,5 @@
 """Pytest fixtures for the whole repo."""
+import re
 from pathlib import Path
 
 import pytest
@@ -23,5 +24,7 @@ def auto_profile(request):
     profiler.stop()
     profiler.print(color=True)
     profile_root.mkdir(exist_ok=True)
-    results_file = profile_root / f"{request.node.name}.html"
+    # Sanitize the file name
+    sanitized_name = re.sub(r'[<>:"/\\|?*]', "", request.node.name)
+    results_file = profile_root / f"{sanitized_name}.html"
     profiler.write_html(results_file)

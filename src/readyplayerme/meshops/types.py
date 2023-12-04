@@ -1,4 +1,5 @@
 """Custom types for meshops."""
+from enum import Enum
 from typing import Protocol, TypeAlias
 
 import numpy as np
@@ -11,6 +12,18 @@ Edges: TypeAlias = npt.NDArray[np.int32] | npt.NDArray[np.int64]  # Shape (e, 2)
 Faces: TypeAlias = npt.NDArray[np.int32] | npt.NDArray[np.int64]  # Shape (f, 3)
 IndexGroups: TypeAlias = list[npt.NDArray[np.uint32]]
 Color: TypeAlias = npt.NDArray[np.uint8]  # Shape RGBA: (c, 4) | RGB: (c, 3) | Grayscale: (c,)
+
+
+class ColorMode(Enum):
+    """Color modes for images."""
+
+    GRAYSCALE = 0
+    RGB = 3
+    RGBA = 4
+
+
+Image: TypeAlias = npt.NDArray[np.float32] | npt.NDArray[np.float64]  # Shape (h, w, c)
+
 
 UVs: TypeAlias = npt.NDArray[np.float32] | npt.NDArray[np.float64]  # Shape (i, 2)
 PixelCoord: TypeAlias = npt.NDArray[np.uint16]  # Shape (i, 2)
