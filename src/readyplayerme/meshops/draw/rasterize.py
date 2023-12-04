@@ -62,44 +62,44 @@ def interpolate_segment(segment: Image) -> Image:
     return np.interp(x, valid_x, valid_segment, left=left_value, right=right_value)
 
 
-def lerp_nans_horizontally(image_array: Image) -> Image:
+def lerp_nans_horizontally(image: Image) -> Image:
     """
     Linearly interpolates over NaN values in a 2D array, horizontally.
 
     This function applies linear interpolation across each row of the array, filling NaN values based on adjacent
     non-NaN elements in the same row. Edge NaNs in a row are filled with the nearest valid values in that row.
 
-    :param image_array: A 2D NumPy array to interpolate over. Each row of the array is processed separately.
+    :param image: A 2D NumPy array to interpolate over. Each row of the array is processed separately.
     :return: A 2D NumPy array with NaN values in each row replaced by interpolated values.
     """
-    if image_array.ndim == 1:
-        image_array = image_array[np.newaxis, :]
+    if image.ndim == 1:
+        image = image[np.newaxis, :]
 
-    return np.apply_along_axis(interpolate_segment, 1, image_array)
+    return np.apply_along_axis(interpolate_segment, 1, image)
 
 
-def lerp_nans_vertically(image_array: Image) -> Image:
+def lerp_nans_vertically(image: Image) -> Image:
     """Linearly interpolates over NaN values in a 2D array, vertically.
 
     This function applies linear interpolation across each column of the array, filling NaN values based on adjacent
     non-NaN elements in the same column. Edge NaNs in a column are filled with the nearest valid values in that column.
 
-    :param image_array: The array to interpolate over.
+    :param image: The array to interpolate over.
     :return: The interpolated array.
     """
-    if image_array.ndim == 1:
-        image_array = image_array[:, np.newaxis]
+    if image.ndim == 1:
+        image = image[:, np.newaxis]
 
-    return np.apply_along_axis(interpolate_segment, 0, image_array)
+    return np.apply_along_axis(interpolate_segment, 0, image)
 
 
-def create_nan_image_array(width: int, height: int) -> Image:
+def create_nan_image(width: int, height: int) -> Image:
     """
-    Create an image array filled with NaN values.
+    Create an image filled with NaN values.
 
     :param width: Width of the image in pixels.
     :param height: Height of the image in pixels.
-    :return: A NumPy array of shape (height, width, 3) filled with NaN values.
+    :return: An RGB image of height x width, filled with NaN values.
     """
     try:
         # Manual check since np.full does not care if is negative
@@ -109,27 +109,27 @@ def create_nan_image_array(width: int, height: int) -> Image:
 
         return np.full((height, width, 3), np.nan, dtype=np.float32)
     except ValueError as error:
-        msg = "Failed to create NaN image array"
+        msg = "Failed to create NaN image"
         raise ValueError(msg) from error
 
 
 def draw_lines(
-    image_array: Image,
+    image: Image,
     edges: Edges,
     image_coords: PixelCoord,
     colors: Color,
     interpolate_func: Callable[[Color, Color, int], Color] = interpolate_values,
 ) -> Image:
     """
-    Draw lines with color interpolation on an image array.
+    Draw lines with color interpolation on an image.
 
-    :param image_array: The image array to draw lines on.
+    :param image: The image to draw lines on.
     :param edges: List of tuples representing the start and end indices of the edges
     from the image_coords and colors array.
     :param image_coords: Texture coordinates for the edges.
     :param colors: Array of colors.
     :param interpolate_func: Function to interpolate colors.
-    :return: Image array with interpolated lines.
+    :return: Image with interpolated lines.
     """
     for edge in edges:
         try:
@@ -145,57 +145,61 @@ def draw_lines(
             continue
 
         color_steps = interpolate_func(color0, color1, rr_length)
-        image_array[rr, cc] = color_steps
+        image[rr, cc] = color_steps
 
-    return image_array
+    return image
 
 
-def image_nan_cleanup(image_array: Image) -> Image:
+def clean_image(image: Image, min_value: int = 0, max_value: int = 255, *, inplace: bool = False) -> Image:
     """
-    Clean up NaN values in an image array and clip values to a valid range.
+    Clean up NaN values in an image and clip values to a range of min-max.
 
-    This function replaces NaN and infinity values in the provided image array.
-    It ensures that all values are within the valid range before type conversion.
+    This function replaces NaN and infinity values in the provided image.
+    It ensures that all values are within the valid range.
 
-    :param image_array: A NumPy array representing an image.
-    :return: A cleaned up NumPy array with values clipped to the valid range.
+    :param image: An image which to cleanup.
+    :param min_value: The minimum value of the valid range.
+    :param max_value: The maximum value of the valid range.
+    :param inplace: Whether to modify the image in place or not. Keyword only argument.
+    :return: A cleaned up image with values clipped to the valid range.
     """
+    # Avoid side effects on the input image
+    if not inplace:
+        image = image.copy()
     # Replace NaN values with zero
-    image_array = np.nan_to_num(image_array, nan=0)
+    image = np.nan_to_num(image, nan=min_value)
 
     # Replace infinity values with the maximum finite value in the array
-    image_array = np.where(np.isinf(image_array), np.nanmax(image_array[np.isfinite(image_array)]), image_array)
+    image = np.where(np.isinf(image), np.nanmax(image[np.isfinite(image)]), image)
 
-    # Clip values to be within the range [0, 255]
-    image_array = np.clip(image_array, 0, 255)
+    # Clip values to be within the range
+    image = np.clip(image, min_value, max_value)
 
-    return image_array
+    return image
 
 
 def rasterize(
-    image_array: Image,
+    image: Image,
     edges: Edges,
     image_coords: PixelCoord,
     colors: Color,
     interpolate_func: Callable[[Color, Color, int], Color] = interpolate_values,
     fill_func: Callable[[Image], Image] = lerp_nans_horizontally,
-    cleanup: Callable[[Image], Image] | None = image_nan_cleanup,
 ) -> Image:
     """
-    Draw lines with color interpolation and fill NaN values in an image array.
+    Draw lines with color interpolation and fill NaN values in an image.
 
-    :image_array: and image array (to fill the triangle the image has to be with NaNs)
+    :image: An image (to fill the triangle the image has to be with NaNs)
     :param edges: List of tuples representing the start and end points of the edges.
     :param image_coords: Texture coordinates for the edges.
     :param colors: Array of colors for the vertices.
     :param interpolate_func: Function to interpolate values(colors, normals, etc..) between the 2 points.
     :param fill_func: Function to fill values(default works with NaN).
-    :param cleanup: Optional function to clean up the image after processing. If None, no cleanup is performed.
-    :return: Image array with interpolated lines and filled values.
+    :return: Image with interpolated lines and filled values.
     """
     # Check for empty inputs and return the input image if one of the parameters are not valid
     if edges.size == 0 or image_coords.size == 0 or colors.size == 0:
-        return cleanup(image_array) if cleanup else image_array
+        return clean_image(image)
 
     try:
         unique_indices = np.unique(edges.flatten())
@@ -212,10 +216,9 @@ def rasterize(
         )
         raise IndexError(msg) from error
 
-    image_array = draw_lines(image_array, edges, image_coords, colors, interpolate_func)
-    image_array = fill_func(image_array)
+    image = draw_lines(image, edges, image_coords, colors, interpolate_func)
+    image = fill_func(image)
 
-    if cleanup:
-        image_array = cleanup(image_array)
+    image = clean_image(image)
 
-    return image_array
+    return image
