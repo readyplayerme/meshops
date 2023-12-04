@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 import readyplayerme.meshops.draw.rasterize as rast
-from readyplayerme.meshops.types import Color, Edges, Image, PixelCoord
+from readyplayerme.meshops.types import Color, ColorMode, Edges, Image, PixelCoord
 
 
 @pytest.mark.parametrize(
@@ -248,7 +248,7 @@ def test_lerp_nans_horizontally(input_array, expected_output):
         ),
         # Edge cases
         (np.array([[np.nan], [2], [3]]), np.array([[2], [2], [3]])),
-        # Multiple columns with nan esges
+        # Multiple columns with nan edges
         (np.array([[1], [2], [np.nan]]), np.array([[1], [2], [2]])),
         (
             np.array([[1, np.nan, 3], [4, 5, np.nan], [np.nan, 7, 5]]),
@@ -285,15 +285,17 @@ def test_lerp_nans_vertically(input_array, expected_output):
 
 
 @pytest.mark.parametrize(
-    "width, height",
+    "width, height, mode",
     [
-        (100, 100),  # Typical usage
+        (100, 100, ColorMode.RGB),  # Typical usage, RGB
+        (100, 100, ColorMode.RGBA),  # RGBA
+        (100, 100, ColorMode.GRAYSCALE),  # Grayscale
     ],
 )
-def test_create_nan_image(width, height):
+def test_create_nan_image(width, height, mode):
     """Test the create_nan_image function with valid inputs."""
-    result = rast.create_nan_image(width, height)
-    assert result.shape == (height, width, 3)
+    result = rast.create_nan_image(width, height, mode)
+    assert result.shape == tuple(filter(bool, (height, width, mode.value)))
     assert np.isnan(result).all()
 
 
@@ -412,7 +414,6 @@ def test_rasterize(
             np.array([[255, 0, 0]]),
             lambda color0, color1, steps: np.linspace(color0, color1, steps).astype(np.uint8),  # Mock interpolate func
             lambda img: np.nan_to_num(img).astype(np.uint8),
-            lambda img: np.nan_to_num(img).astype(np.uint8),
             IndexError,
         ),
         # Zero Dimensions
@@ -423,7 +424,6 @@ def test_rasterize(
             np.array([[255, 0, 0], [0, 255, 0]]),
             lambda color0, color1, steps: np.linspace(color0, color1, steps).astype(np.uint8),
             lambda img: np.nan_to_num(img).astype(np.uint8),
-            lambda img: np.nan_to_num(img).astype(np.uint8),
             IndexError,
         ),
         # Mismatched Array Sizes
@@ -433,7 +433,6 @@ def test_rasterize(
             np.array([[0, 0], [1, 1]]),  # Only two coordinates provided
             np.array([[255, 0, 0], [0, 255, 0], [0, 0, 255]]),  # Three colors provided
             lambda c0, c1, steps: np.linspace(c0, c1, steps).astype(np.uint8),
-            lambda img: np.nan_to_num(img).astype(np.uint8),
             lambda img: np.nan_to_num(img).astype(np.uint8),
             IndexError,
         ),

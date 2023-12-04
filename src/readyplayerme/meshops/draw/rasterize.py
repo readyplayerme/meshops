@@ -3,7 +3,7 @@ from collections.abc import Callable
 import numpy as np
 import skimage
 
-from readyplayerme.meshops.types import Color, Edges, Image, PixelCoord
+from readyplayerme.meshops.types import Color, ColorMode, Edges, Image, PixelCoord
 
 
 def interpolate_values(start: Color, end: Color, num_steps: int) -> Color:
@@ -93,12 +93,13 @@ def lerp_nans_vertically(image: Image) -> Image:
     return np.apply_along_axis(interpolate_segment, 0, image)
 
 
-def create_nan_image(width: int, height: int) -> Image:
+def create_nan_image(width: int, height: int, mode: ColorMode = ColorMode.RGB) -> Image:
     """
     Create an image filled with NaN values.
 
     :param width: Width of the image in pixels.
     :param height: Height of the image in pixels.
+    :param mode: The color mode of the image. Default RGB.
     :return: An RGB image of height x width, filled with NaN values.
     """
     try:
@@ -107,7 +108,8 @@ def create_nan_image(width: int, height: int) -> Image:
             msg = "Width and height must be positive integers"
             raise ValueError(msg)
 
-        return np.full((height, width, 3), np.nan, dtype=np.float32)
+        shape = (height, width) if mode == ColorMode.GRAYSCALE else (height, width, mode.value)
+        return np.full(shape, np.nan, dtype=np.float32)
     except ValueError as error:
         msg = "Failed to create NaN image"
         raise ValueError(msg) from error
