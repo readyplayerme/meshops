@@ -185,21 +185,24 @@ def rasterize(
     colors: Color,
     interpolate_func: Callable[[Color, Color, int], Color] = interpolate_values,
     fill_func: Callable[[Image], Image] = lerp_nans_horizontally,
+    *,
+    inplace: bool = False,
 ) -> Image:
     """
     Draw lines with color interpolation and fill NaN values in an image.
 
-    :image: An image (to fill the triangle the image has to be with NaNs)
-    :param edges: List of tuples representing the start and end points of the edges.
-    :param image_coords: Texture coordinates for the edges.
-    :param colors: Array of colors for the vertices.
-    :param interpolate_func: Function to interpolate values(colors, normals, etc..) between the 2 points.
-    :param fill_func: Function to fill values(default works with NaN).
+    :image: An image to draw lines on and fill NaN values in.
+    :param edges: Index pairs into the image_coords and colors arrays for starts and ends of lines.
+    :param image_coords: Texture coordinates for the lines' starts and ends.
+    :param colors: Array of colors for the starts and ends of lines.
+    :param interpolate_func: Function to interpolate color values between the start and end of a line. Default Lerp.
+    :param fill_func: Function to fill values(default works with NaN). Default lerp horizontally.
+    :param inplace: Whether to modify the image in place or not. Keyword only argument.
     :return: Image with interpolated lines and filled values.
     """
     # Check for empty inputs and return the input image if one of the parameters are not valid
     if edges.size == 0 or image_coords.size == 0 or colors.size == 0:
-        return clean_image(image)
+        return clean_image(image, inplace=inplace)
 
     try:
         unique_indices = np.unique(edges.flatten())
@@ -216,9 +219,11 @@ def rasterize(
         )
         raise IndexError(msg) from error
 
+    if not inplace:
+        image = image.copy()
     image = draw_lines(image, edges, image_coords, colors, interpolate_func)
     image = fill_func(image)
 
-    image = clean_image(image)
+    image = clean_image(image, inplace=True)
 
     return image
