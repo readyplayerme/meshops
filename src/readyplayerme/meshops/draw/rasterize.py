@@ -3,6 +3,7 @@ from collections.abc import Callable
 import numpy as np
 import skimage
 
+from readyplayerme.meshops.image import get_color_array_color_mode, get_image_color_mode
 from readyplayerme.meshops.types import Color, ColorMode, Edges, Image, PixelCoord
 
 
@@ -211,11 +212,12 @@ def rasterize(
         return clean_image(image, inplace=inplace)
 
     # Check if the image and colors are compatible (both grayscale or both color)
-    is_image_grayscale = image.ndim == 2  # noqa: PLR2004
-    is_colors_grayscale = (colors.ndim == 2 and colors.shape[-1] == 1) or (colors.ndim == 1)  # noqa: PLR2004
-    if is_image_grayscale != is_colors_grayscale:
+    image_mode = get_image_color_mode(image)
+    colors_mode = get_color_array_color_mode(colors)
+    if image_mode != colors_mode:
         msg = "Color mode of 'image' and 'colors' must match (both grayscale or both color)."
         raise ValueError(msg)
+
     try:
         unique_indices = np.unique(edges.flatten())
         # Failing early before proceeding with the code because draw line loops over the indices
