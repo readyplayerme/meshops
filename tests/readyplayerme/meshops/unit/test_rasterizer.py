@@ -152,7 +152,7 @@ def test_draw_lines(image, edges, image_coords, colors, interpolate_func, expect
             np.array([0]),  # Start color: Black in grayscale
             np.array([255]),  # End color: White in grayscale
             3,
-            np.array([[0], [127.5], [255]]),  # Intermediate grayscale values
+            np.array([0, 127.5, 255]),  # Intermediate grayscale values
         ),
         # Interpolation with more steps
         (
@@ -435,6 +435,26 @@ def test_rasterize(
             lambda c0, c1, steps: np.linspace(c0, c1, steps).astype(np.uint8),
             lambda img: np.nan_to_num(img).astype(np.uint8),
             IndexError,
+        ),
+        # Mismatched Color Modes (Grayscale image with RGB colors)
+        (
+            np.full((100, 100), np.nan, dtype=np.float32),  # Grayscale image
+            np.array([[0, 1]]),
+            np.array([[10, 10], [20, 20]]),
+            np.array([[255, 0, 0], [0, 255, 0]]),  # RGB colors
+            lambda color0, color1, steps: np.linspace(color0, color1, steps).astype(np.uint8),
+            lambda img: np.nan_to_num(img).astype(np.uint8),
+            ValueError,  # Expecting a ValueError due to mismatched color modes
+        ),
+        # Mismatched Color Modes (RGB image with Grayscale colors)
+        (
+            np.full((100, 100, 3), np.nan, dtype=np.float32),  # RGB image
+            np.array([[0, 1]]),
+            np.array([[10, 10], [20, 20]]),
+            np.array([255, 0]),  # Grayscale colors
+            lambda color0, color1, steps: np.linspace(color0, color1, steps).astype(np.uint8),
+            lambda img: np.nan_to_num(img).astype(np.uint8),
+            ValueError,  # Expecting a ValueError due to mismatched color modes
         ),
     ],
 )

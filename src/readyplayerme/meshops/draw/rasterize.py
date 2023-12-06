@@ -27,7 +27,11 @@ def interpolate_values(start: Color, end: Color, num_steps: int) -> Color:
         raise ValueError(msg)
 
     t = np.arange(num_steps) / max(num_steps - 1, 1)
-    return start[None, :] + t[:, None] * (end - start)
+
+    if start.size == 1 and start.ndim == 1:
+        return start + t * (end - start)
+    else:
+        return start[None, :] + t[:, None] * (end - start)
 
 
 def interpolate_segment(segment: Image) -> Image:
@@ -206,6 +210,12 @@ def rasterize(
     if edges.size == 0 or image_coords.size == 0 or colors.size == 0:
         return clean_image(image, inplace=inplace)
 
+    # Check if the image and colors are compatible (both grayscale or both color)
+    is_image_grayscale = image.ndim == 2  # noqa: PLR2004
+    is_colors_grayscale = (colors.ndim == 2 and colors.shape[-1] == 1) or (colors.ndim == 1)  # noqa: PLR2004
+    if is_image_grayscale != is_colors_grayscale:
+        msg = "Color mode of 'image' and 'colors' must match (both grayscale or both color)."
+        raise ValueError(msg)
     try:
         unique_indices = np.unique(edges.flatten())
         # Failing early before proceeding with the code because draw line loops over the indices
