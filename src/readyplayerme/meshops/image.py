@@ -59,9 +59,9 @@ def blend_images(image1: IMG_type, image2: IMG_type, mask: IMG_type) -> IMG_type
     This function performs a blending operation on two images using a mask. The mask determines the blending ratio
     at each pixel. The blending is done via a vectorized operation for efficiency.
 
-    :param image1: The first image to blend, as a NumPy array.
-    :param image2: The second image to blend, as a NumPy array. Must be the same shape as the first image.
-    :param mask: The blending mask, as a NumPy array. Must be the same shape as the images.
+    :param image1: The first image to blend.
+    :param image2: The second image to blend. Must be the same shape as the first image.
+    :param mask: The blending mask. Must be the same shape as the images.
     :return: The blended image.
     """
     try:
