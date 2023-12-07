@@ -9,21 +9,21 @@ def get_image_color_mode(image: IMG_type) -> ColorMode:
     :param image: An image array.
     :return ColorMode:: Enum indicating the color mode of the image (GRAYSCALE, RGB, or RGBA).
     """
-    match image.ndim:
-        case 2:
+    try:
+        n_channels = image.shape[-1]
+    except IndexError as error:
+        error_msg = "Image has invalid shape: zero dimensions."
+        raise ValueError(error_msg) from error
+    match image.ndim, n_channels:
+        case 2, _:
             return ColorMode.GRAYSCALE
-        case 3:
-            match image.shape[-1]:
-                case 3:
-                    return ColorMode.RGB
-                case 4:
-                    return ColorMode.RGBA
-                case _:
-                    msg = "Invalid channel count for a color image."
-                    raise ValueError(msg)
+        case 3, 3:
+            return ColorMode.RGB
+        case 3, 4:
+            return ColorMode.RGBA
         case _:
-            msg = "Invalid dimensions for an image."
-            raise ValueError(msg)
+            error_msg = "Invalid color mode for an image."
+            raise ValueError(error_msg)
 
 
 def get_color_array_color_mode(color_array: Color) -> ColorMode:
@@ -33,20 +33,20 @@ def get_color_array_color_mode(color_array: Color) -> ColorMode:
     :param color_array: An array representing colors.
     :return ColorMode: Enum indicating the color mode of the color array (GRAYSCALE, RGB, or RGBA).
     """
-    match color_array.ndim:
-        case 1:
+    try:
+        n_channels = color_array.shape[-1]
+    except IndexError as error:
+        error_msg = "Color has invalid shape: zero dimensions."
+        raise ValueError(error_msg) from error
+    match color_array.ndim, n_channels:
+        case 1, _:
             return ColorMode.GRAYSCALE
-        case 2:
-            match color_array.shape[-1]:
-                case 1:
-                    return ColorMode.GRAYSCALE
-                case 3:
-                    return ColorMode.RGB
-                case 4:
-                    return ColorMode.RGBA
-                case _:
-                    msg = "Invalid format for a color array."
-                    raise ValueError(msg)
+        case 2, 1:
+            return ColorMode.GRAYSCALE
+        case 2, 3:
+            return ColorMode.RGB
+        case 2, 4:
+            return ColorMode.RGBA
         case _:
             msg = "Invalid dimensions for a color array."
             raise ValueError(msg)
