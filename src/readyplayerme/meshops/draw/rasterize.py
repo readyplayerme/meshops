@@ -3,6 +3,7 @@ from collections.abc import Callable
 import numpy as np
 import skimage
 
+from readyplayerme.meshops.image import get_color_array_color_mode, get_image_color_mode
 from readyplayerme.meshops.types import Color, ColorMode, Edges, Image, PixelCoord
 
 
@@ -27,7 +28,11 @@ def interpolate_values(start: Color, end: Color, num_steps: int) -> Color:
         raise ValueError(msg)
 
     t = np.arange(num_steps) / max(num_steps - 1, 1)
-    return start[None, :] + t[:, None] * (end - start)
+
+    if start.size == 1 and start.ndim == 1:
+        return start + t * (end - start)
+    else:
+        return start[None, :] + t[:, None] * (end - start)
 
 
 def interpolate_segment(segment: Image) -> Image:
@@ -205,6 +210,13 @@ def rasterize(
     # Check for empty inputs and return the input image if one of the parameters are not valid
     if edges.size == 0 or image_coords.size == 0 or colors.size == 0:
         return clean_image(image, inplace=inplace)
+
+    # Check if the image and colors are compatible (both grayscale or both color)
+    image_mode = get_image_color_mode(image)
+    colors_mode = get_color_array_color_mode(colors)
+    if image_mode != colors_mode:
+        msg = "Color mode of 'image' and 'colors' must match (both grayscale or both color)."
+        raise ValueError(msg)
 
     try:
         unique_indices = np.unique(edges.flatten())
