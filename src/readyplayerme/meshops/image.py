@@ -1,4 +1,6 @@
-from readyplayerme.meshops.types import Color, ColorMode
+import numpy as np
+
+from readyplayerme.meshops.types import Color, ColorMode, Mesh
 from readyplayerme.meshops.types import Image as IMG_type
 
 
@@ -80,3 +82,14 @@ def blend_images(image1: IMG_type, image2: IMG_type, mask: IMG_type) -> IMG_type
         # Re-raise the original exception if it's not a shape mismatch
         msg = "Could not blend the two images with the given mask"
         raise AttributeError(msg) from error
+
+
+def get_diffuse_image(mesh: Mesh) -> IMG_type:
+    """Extract the diffuse image fro ma .glb file."""
+    if mesh.visual.material.baseColorTexture:
+        image = mesh.visual.material.baseColorTexture
+        image = np.array(image)
+        return image
+    else:
+        msg = "Could not load texture"
+        raise ValueError(msg)
