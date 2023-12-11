@@ -40,55 +40,16 @@ The [`good first issue` label](https://github.com/readyplayerme/meshops/issues?q
 
 ### Setting up Development Environment
 
-It's best to use a separate Python _environment_ for development to avoid conflicts with other Python projects and keep your system Python clean. In this section we'll provide instructions on how to set up such an environment.
+It's best to use a separate Python _environment_ for development to avoid conflicts with other Python projects and keep your system Python clean. In this section we'll provide instructions on how to set up such an environment for the project.
 
 We use [hatch](https://hatch.pypa.io/) as the Python package build backend and Python project manager.
 We recommend to install it as it will provide you with a project-specific development environment. However, using hatch is not a necessity, but more of a convenience.  
-Unfortunately, there are no pre-built binaries for hatch, and hatch on its own can only create environments with Python versions that are already installed on your system. So you'll need to first create a Python environment to install hatch into, in order to then spawn another environment for the project by using hatch. It's a bit like the chicken & egg problem paired with the movie Inception.😵‍💫 We'll walk you through it.
 
-1. We encourage using an environment manager such as [conda](https://docs.conda.io/en/latest/), [mamba/micromamba](https://mamba.readthedocs.io/en/latest/index.html), or [poetry](https://python-poetry.org/).  
-    You'll need a minimum Python version 3.10.
-    Here's an example on Windows:
+1. You can read [hatch's installation instructions](https://hatch.pypa.io/latest/install/) for information on how to install it on your system.
+Since version 1.8.0, hatch is available as pre-built binaries and can install the required Python version as a virtual environment.
 
-    ```powershell
-    # Get mamba using winget.
-    winget install -e --id CondaForge.Mambaforge
-
-    # Make mamba available in your shell. mamba may be either installed in %ProgramData% or %LocalAppData%.
-    %ProgramData%\mambaforge\.condabin\mamba init
-    # OR, if your mamba installation is in %LocalAppData% instead:
-    %LocalAppData%\mambaforge\.condabin\mamba init
-    # You may need to restart your terminal now.
-
-    # Test that mamba is available.
-    mamba --version  # This should print something like "mamba 1.4.1".
-    ```
-
-2. You can read [hatch's installation instructions](https://hatch.pypa.io/latest/install/) for information on how to install it into your Python environment, or follow the instructions below.
-
-    If you use conda/mamba, you can create a Python environment to which hatch gets installed with:
-
-    ```powershell
-    mamba create -n hatch python=3.10 hatch
-    ```
-
-    In the command above, the `-n hatch` option just gives the environment the name _hatch_, but it can be anything.
-    The name _hatch_ for the environment was incidentally chosen here to match the 1 package we want to utilize in this environment. The `python=3.10 hatch` part of the command defines what we want to install into the environment. See [mamba's documentation](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html#quickstart) for more details.
-
-3. Activate the hatch environment.
-
-    ```powershell
-    mamba activate hatch
-    ```
-
-    OR if you're using Powershell (see [issue](https://github.com/mamba-org/mamba/issues/1717)):
-
-    ```powershell
-    conda activate hatch
-    ```
-
-4. Prepare the environment for development.
-    Once you setup hatch, navigate to the cloned repository, and execute:
+2. Prepare the environment for development.
+    Once you have setup hatch, navigate to the cloned repository, and execute:
 
     ```powershell
     hatch env create
