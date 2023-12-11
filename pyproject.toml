@@ -265,7 +265,7 @@ module = "pyinstrument.*"
 ignore_missing_imports = true
 
 [tool.coverage.run]
-source_pkgs = ["readyplayerme", "tests"]
+source_pkgs = ["readyplayerme", "readyplayerme.meshops"]
 branch = true
 parallel = true
 omit = [
@@ -274,7 +274,6 @@ omit = [
 
 [tool.coverage.paths]
 coverage_debugging = ["src/readyplayerme", "*/meshops/src/readyplayerme"]
-tests = ["tests", "*/meshops/tests"]
 
 [tool.coverage.report]
 include_namespace_packages = true
