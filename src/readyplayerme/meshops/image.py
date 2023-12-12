@@ -88,7 +88,7 @@ def get_diffuse_image(mesh: Mesh) -> IMG_type:
     """Extract the diffuse image fro ma .glb file."""
     if mesh.visual.material.baseColorTexture:
         image = mesh.visual.material.baseColorTexture
-        image = np.array(image)
+        image = np.array((image), dtype=np.uint8)
         return image
     else:
         msg = "Could not load texture"

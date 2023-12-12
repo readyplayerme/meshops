@@ -22,5 +22,5 @@ def test_get_diffuse_image(gltf_file_with_diffuse: str | Path, load_local_image:
     local_mesh = mops.read_mesh(gltf_file_with_diffuse)
     extracted_image = img.get_diffuse_image(local_mesh)
     local_image = Image.open(load_local_image)
-    local_image = np.array(local_image)
+    local_image = np.array((local_image), dtype=np.uint8)
     assert np.array_equiv(extracted_image, local_image), "Not matching."
