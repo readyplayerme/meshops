@@ -45,11 +45,17 @@ jobs:
     - name: Run tests
       run: hatch run test:cov
 
-    - name: Upload performance profiling artifact
+    - name: Prepare artifact
+      run: |
+        mkdir artifact
+        cp -r tests/.profiles artifact/.profiles
+        cp -r tests/.coverage artifact/.coverage
+
+    - name: Upload performance & coverage report artifact
       uses: actions/upload-artifact@v3
       with:
-        name: performance-profiling
-        path: tests/.profiles
+        name: coverage-profiling
+        path: artifact
         if-no-files-found: error
 
     - name: Run linting
