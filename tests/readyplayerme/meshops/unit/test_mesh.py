@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from readyplayerme.meshops import mesh
-from readyplayerme.meshops.types import IndexGroups, Indices, Mesh, PixelCoord, UVs, Vertices
+from readyplayerme.meshops.types import IndexGroups, Indices, PixelCoord, UVs, Vertices
 
 
 class TestReadMesh:
@@ -18,7 +18,7 @@ class TestReadMesh:
         "filepath, expected",
         [("test.glb", mesh.read_gltf), (Path("test.glb"), mesh.read_gltf), ("test.gltf", mesh.read_gltf)],
     )
-    def test_get_mesh_reader_glb(self, filepath: str | Path, expected: Callable[[str | Path], Mesh]):
+    def test_get_mesh_reader_glb(self, filepath: str | Path, expected: Callable[[str | Path], mesh.Mesh]):
         """Test the get_mesh_reader function with a .glb file path."""
         reader = mesh.get_mesh_reader(filepath)
         assert callable(reader), "The mesh reader should be a callable function."
@@ -34,23 +34,26 @@ class TestReadMesh:
         """Test the read_gltf function returns the expected type."""
         result = mesh.read_gltf(gltf_simple_file)
         # Check the result has all the expected attributes and of the correct type.
-        for attr in Mesh.__annotations__:
+        for attr in mesh.Mesh.__annotations__:
             assert hasattr(result, attr), f"The mesh class should have a '{attr}' attribute."
             # Find the type so we can use it as a second argument to isinstance.
-            tp = get_origin(Mesh.__annotations__[attr])
+            tp = get_origin(mesh.Mesh.__annotations__[attr])
             if tp is Union or tp is types.UnionType:
-                tp = get_args(Mesh.__annotations__[attr])
+                tp = get_args(mesh.Mesh.__annotations__[attr])
                 # Loop through the types in the union and check if the result is compatible with any of them.
-                assert any(
-                    isinstance(getattr(result, attr), get_origin(t)) for t in tp
-                ), f"The '{attr}' attribute should be compatible with {tp}."
+                matched = False
+                for type_ in tp:
+                    # Check original type definition. isinstance doesn't work with None, but with NoneType.
+                    origin = o if (o := get_origin(type_)) is not None else type_
+                    matched |= isinstance(getattr(result, attr), origin)
+                assert matched, f"The '{attr}' attribute should be compatible with {tp}."
             else:
                 assert isinstance(
                     getattr(result, attr), tp
-                ), f"The '{attr}' attribute should be compatible with {Mesh.__annotations__[attr]}."
+                ), f"The '{attr}' attribute should be compatible with {mesh.Mesh.__annotations__[attr]}."
 
 
-def test_get_boundary_vertices(mock_mesh: Mesh):
+def test_get_boundary_vertices(mock_mesh: mesh.Mesh):
     """Test the get_boundary_vertices function returns the expected indices."""
     boundary_vertices = mesh.get_boundary_vertices(mock_mesh.edges)
 

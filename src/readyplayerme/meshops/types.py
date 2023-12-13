@@ -1,6 +1,6 @@
 """Custom types for meshops."""
 from enum import Enum
-from typing import Protocol, TypeAlias
+from typing import TypeAlias
 
 import numpy as np
 import numpy.typing as npt
@@ -22,19 +22,10 @@ class ColorMode(Enum):
     RGBA = 4
 
 
-Image: TypeAlias = npt.NDArray[np.float32] | npt.NDArray[np.float64]  # Shape (h, w, c)
+# The Image type is based on numpy arrays for compatibility with skimage. Floats are used to allow NANs,
+# which are not supported by uint8, but the range of floats is supposed to be [0, 255] for colors and [0, 1] for masks.
+Image: TypeAlias = npt.NDArray[np.uint8] | npt.NDArray[np.float32] | npt.NDArray[np.float64]  # Shape (h, w, c)
 
 
 UVs: TypeAlias = npt.NDArray[np.float32] | npt.NDArray[np.float64]  # Shape (i, 2)
 PixelCoord: TypeAlias = npt.NDArray[np.uint16]  # Shape (i, 2)
-
-
-class Mesh(Protocol):
-    """Structural type for a mesh class.
-
-    Any class considered a mesh must structurally be compatible with this protocol.
-    """
-
-    vertices: Vertices
-    edges: Edges
-    faces: Faces

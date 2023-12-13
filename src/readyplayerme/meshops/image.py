@@ -1,8 +1,8 @@
-from readyplayerme.meshops.types import Color, ColorMode
-from readyplayerme.meshops.types import Image as IMG_type
+"""Module for dealing with colors and image manipulation."""
+from readyplayerme.meshops.types import Color, ColorMode, Image
 
 
-def get_image_color_mode(image: IMG_type) -> ColorMode:
+def get_image_color_mode(image: Image) -> ColorMode:
     """
     Determine the color mode of an image.
 
@@ -52,7 +52,7 @@ def get_color_array_color_mode(color_array: Color) -> ColorMode:
             raise ValueError(msg)
 
 
-def blend_images(image1: IMG_type, image2: IMG_type, mask: IMG_type) -> IMG_type:
+def blend_images(image1: Image, image2: Image, mask: Image) -> Image:
     """
     Blend two images using a mask.
 
