@@ -1,12 +1,28 @@
 """Functions to handle mesh data and read it from file."""
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 import trimesh
 from scipy.spatial import cKDTree
 
-from readyplayerme.meshops.types import Color, Edges, IndexGroups, Indices, Mesh, PixelCoord, UVs, Vertices
+from readyplayerme.meshops.material import Material
+from readyplayerme.meshops.types import Color, Edges, Faces, IndexGroups, Indices, PixelCoord, UVs, Vertices
+
+
+@dataclass()
+class Mesh:
+    """Mesh data type.
+
+    This class serves as an abstraction for loading mesh data from different file formats.
+    """
+
+    vertices: Vertices
+    uv_coords: UVs | None
+    edges: Edges
+    faces: Faces
+    material: Material | None
 
 
 def read_mesh(filename: str | Path) -> Mesh:
@@ -33,7 +49,27 @@ def read_gltf(filename: str | Path) -> Mesh:
     :param filename: The path to the glTF file to be loaded.
     :return: The loaded mesh object.
     """
-    return trimesh.load(filename, process=False, force="mesh")
+    try:
+        loaded = trimesh.load(filename, process=False, force="mesh")
+    except ValueError as error:
+        msg = f"Error loading {filename}: {error}"
+        raise OSError(msg) from error
+    # Convert the loaded trimesh into a Mesh object for abstraction.
+    try:
+        uvs = loaded.visual.uv  # Fails if it has ColorVisuals instead of TextureVisuals.
+    except AttributeError:
+        uvs = None
+    try:
+        material = Material.from_trimesh_material(loaded.visual.material)
+    except AttributeError:
+        material = None
+    return Mesh(
+        vertices=np.array(loaded.vertices),
+        uv_coords=uvs,
+        faces=np.array(loaded.faces),
+        edges=loaded.edges,
+        material=material,
+    )
 
 
 def get_boundary_vertices(edges: Edges) -> Indices:

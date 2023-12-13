@@ -1,5 +1,6 @@
 """Pytest fixtures for meshops tests."""
 import pytest
+import skimage as ski
 
 
 @pytest.fixture
@@ -13,8 +14,8 @@ def gltf_simple_file():
 
 
 @pytest.fixture
-def gltf_file_with_diffuse():
-    """Return a path to a glTF file with a diffuse texture in it."""
+def gltf_file_with_basecolor_texture():
+    """Return a path to a glTF file that contains a baseColorTexture."""
     from importlib.resources import files
 
     import tests.mocks
@@ -23,10 +24,11 @@ def gltf_file_with_diffuse():
 
 
 @pytest.fixture
-def load_local_image():
-    """Return a path to an image file."""
+def mock_image():
+    """Return an image as a numpy array."""
     from importlib.resources import files
 
     import tests.mocks
 
-    return files(tests.mocks).joinpath("input-img.png")
+    filepath = files(tests.mocks).joinpath("input-img.png")
+    return ski.io.imread(filepath)
