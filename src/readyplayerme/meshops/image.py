@@ -1,10 +1,8 @@
-import numpy as np
-
-from readyplayerme.meshops.types import Color, ColorMode, Mesh
-from readyplayerme.meshops.types import Image as IMG_type
+"""Module for dealing with colors and image manipulation."""
+from readyplayerme.meshops.types import Color, ColorMode, Image
 
 
-def get_image_color_mode(image: IMG_type) -> ColorMode:
+def get_image_color_mode(image: Image) -> ColorMode:
     """
     Determine the color mode of an image.
 
@@ -54,7 +52,7 @@ def get_color_array_color_mode(color_array: Color) -> ColorMode:
             raise ValueError(msg)
 
 
-def blend_images(image1: IMG_type, image2: IMG_type, mask: IMG_type) -> IMG_type:
+def blend_images(image1: Image, image2: Image, mask: Image) -> Image:
     """
     Blend two images using a mask.
 
@@ -82,14 +80,3 @@ def blend_images(image1: IMG_type, image2: IMG_type, mask: IMG_type) -> IMG_type
         # Re-raise the original exception if it's not a shape mismatch
         msg = "Could not blend the two images with the given mask"
         raise AttributeError(msg) from error
-
-
-def get_diffuse_image(mesh: Mesh) -> IMG_type:
-    """Extract the diffuse image fro ma .glb file."""
-    if mesh.visual.material.baseColorTexture:
-        image = mesh.visual.material.baseColorTexture
-        image = np.array((image), dtype=np.uint8)
-        return image
-    else:
-        msg = "Could not load texture"
-        raise ValueError(msg)
