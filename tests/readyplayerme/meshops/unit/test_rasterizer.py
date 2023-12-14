@@ -5,7 +5,7 @@ import typing
 import numpy as np
 import pytest
 
-import readyplayerme.meshops.draw.rasterize as rast
+from readyplayerme.meshops import draw
 from readyplayerme.meshops.types import Color, ColorMode, Edges, Image, PixelCoord
 
 
@@ -34,7 +34,7 @@ from readyplayerme.meshops.types import Color, ColorMode, Edges, Image, PixelCoo
 )
 def test_interpolate_segment(input_segment, expected_output):
     """Test the interpolate_segment function with various input scenarios."""
-    output = rast.interpolate_segment(input_segment)
+    output = draw.interpolate_segment(input_segment)
     np.testing.assert_array_equal(output, expected_output)
 
 
@@ -126,7 +126,7 @@ def test_interpolate_segment(input_segment, expected_output):
 )
 def test_draw_lines(image, edges, image_coords, colors, interpolate_func, expected_output):
     """Test draw_lines function with various edge cases."""
-    output = rast.draw_lines(image, edges, image_coords, colors, interpolate_func)
+    output = draw.draw_lines(image, edges, image_coords, colors, interpolate_func)
     np.testing.assert_array_equal(output, expected_output)
 
 
@@ -171,7 +171,7 @@ def test_draw_lines(image, edges, image_coords, colors, interpolate_func, expect
 )
 def test_interpolate_values(start_color, end_color, num_steps, expected_output):
     """Test the vectorized_interpolate function with various input scenarios."""
-    actual_output = rast.interpolate_values(start_color, end_color, num_steps)
+    actual_output = draw.interpolate_values(start_color, end_color, num_steps)
     np.testing.assert_array_almost_equal(actual_output, expected_output, decimal=5)
 
 
@@ -189,7 +189,7 @@ def test_interpolate_values(start_color, end_color, num_steps, expected_output):
 def test_interpolate_values_should_fail(start_color, end_color, num_steps, expected_exception):
     """Test the vectorized_interpolate function with invalid input scenarios."""
     with pytest.raises(expected_exception):
-        rast.interpolate_values(start_color, end_color, num_steps)
+        draw.interpolate_values(start_color, end_color, num_steps)
 
 
 @pytest.mark.parametrize(
@@ -232,7 +232,7 @@ def test_interpolate_values_should_fail(start_color, end_color, num_steps, expec
 )
 def test_lerp_nans_horizontally(input_array, expected_output):
     """Test vectorized_lerp_nans_vertically function with various input scenarios."""
-    actual_output = rast.lerp_nans_horizontally(input_array)
+    actual_output = draw.lerp_nans_horizontally(input_array)
     np.testing.assert_array_equal(actual_output, expected_output)
 
 
@@ -280,7 +280,7 @@ def test_lerp_nans_horizontally(input_array, expected_output):
 )
 def test_lerp_nans_vertically(input_array, expected_output):
     """Test vectorized_lerp_nans_horizontally function with various input scenarios."""
-    actual_output = rast.lerp_nans_vertically(input_array)
+    actual_output = draw.lerp_nans_vertically(input_array)
     np.testing.assert_array_equal(actual_output, expected_output)
 
 
@@ -294,7 +294,7 @@ def test_lerp_nans_vertically(input_array, expected_output):
 )
 def test_create_nan_image(width, height, mode):
     """Test the create_nan_image function with valid inputs."""
-    result = rast.create_nan_image(width, height, mode)
+    result = draw.create_nan_image(width, height, mode)
     assert result.shape == tuple(filter(bool, (height, width, mode.value)))
     assert np.isnan(result).all()
 
@@ -313,7 +313,7 @@ def test_create_nan_image(width, height, mode):
 def test_create_nan_image_should_fail(width, height, error):
     """Test the create_nan_image function with invalid inputs."""
     with pytest.raises(error):
-        rast.create_nan_image(width, height)
+        draw.create_nan_image(width, height)
 
 
 @pytest.mark.parametrize(
@@ -339,7 +339,7 @@ def test_create_nan_image_should_fail(width, height, error):
 )
 def test_clean_image(input_array, expected_output):
     """Test the clean_image function with various input scenarios."""
-    output = rast.clean_image(input_array, inplace=False)
+    output = draw.clean_image(input_array, inplace=False)
     np.testing.assert_array_equal(output, expected_output)
 
 
@@ -391,7 +391,7 @@ def test_rasterize(
     """Test rasterize function with valid inputs."""
     if isinstance(expected_output, str) and expected_output == "mock_image":
         expected_output = request.getfixturevalue("mocked_image_diagonal_line_rgb")
-    output = rast.rasterize(
+    output = draw.rasterize(
         image,
         edges,
         image_coords,
@@ -469,4 +469,4 @@ def test_rasterize_should_fail(
 ):
     """Test rasterize function with invalid inputs."""
     with pytest.raises(expected_exception):
-        rast.rasterize(image, edges, image_coords, colors, interpolate_func, fill_func)
+        draw.rasterize(image, edges, image_coords, colors, interpolate_func, fill_func)

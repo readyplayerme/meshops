@@ -1,4 +1,4 @@
-"""Module for dealing with colors and image manipulation."""
+"""Get, set, and convert color modes."""
 from readyplayerme.meshops.types import Color, ColorMode, Image
 
 
@@ -50,33 +50,3 @@ def get_color_array_color_mode(color_array: Color) -> ColorMode:
         case _:
             msg = "Invalid dimensions for a color array."
             raise ValueError(msg)
-
-
-def blend_images(image1: Image, image2: Image, mask: Image) -> Image:
-    """
-    Blend two images using a mask.
-
-    This function performs a blending operation on two images using a mask. The mask determines the blending ratio
-    at each pixel. The blending is done via a vectorized operation for efficiency.
-
-    :param image1: The first image to blend.
-    :param image2: The second image to blend. Must be the same shape as the first image.
-    :param mask: The blending mask. Must be the same shape as the images.
-    :return: The blended image.
-    """
-    try:
-        # Check if the error is due to shape mismatch
-        if not (image1.shape == image2.shape):
-            msg = "image1 and image2 must have the same shape."
-            raise ValueError(msg)
-        # Mask is reshaped to be able to perform the blending
-        expected_dimensions = 2
-        if mask.ndim == expected_dimensions and image1.ndim == expected_dimensions + 1:
-            mask = mask[:, :, None]
-        # Perform the blending operation using vectorized NumPy operations
-        blended_image = (1 - mask) * image1 + mask * image2
-        return blended_image
-    except AttributeError as error:
-        # Re-raise the original exception if it's not a shape mismatch
-        msg = "Could not blend the two images with the given mask"
-        raise AttributeError(msg) from error

@@ -3,7 +3,7 @@ from collections.abc import Callable
 import numpy as np
 import skimage
 
-from readyplayerme.meshops.image import get_color_array_color_mode, get_image_color_mode
+from readyplayerme.meshops.draw.colormodes import get_color_array_color_mode, get_image_color_mode
 from readyplayerme.meshops.types import Color, ColorMode, Edges, Image, PixelCoord
 
 
