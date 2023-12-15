@@ -8,7 +8,7 @@ import trimesh
 from scipy.spatial import cKDTree
 
 from readyplayerme.meshops.material import Material
-from readyplayerme.meshops.types import Color, Edges, Faces, IndexGroups, Indices, PixelCoord, UVs, Vertices
+from readyplayerme.meshops.types import Edges, Faces, IndexGroups, Indices, PixelCoord, UVs, Vertices
 
 
 @dataclass()
@@ -164,35 +164,3 @@ def uv_to_image_coords(
     img_coords[:, 1] = ((1 - wrapped_uvs[:, 1]) * (height - 0.5)).astype(np.uint16)
 
     return img_coords
-
-
-def blend_colors(colors: Color, index_groups: IndexGroups) -> Color:
-    """Blend colors according to the given grouped indices.
-
-    Colors at indices in the same group are blended into having the same color.
-
-    :param index_groups: Groups of indices. Indices must be within the bounds of the colors array.
-    :param vertex_colors: Colors.
-    :return: Colors with new blended colors at given indices.
-    """
-    if not len(colors):
-        return np.empty_like(colors)
-
-    blended_colors = np.copy(colors)
-    if not index_groups:
-        return blended_colors
-
-    # Check that the indices are within the bounds of the colors array,
-    # so we don't start any operations that would later fail.
-    try:
-        colors[np.hstack(index_groups)]
-    except IndexError as error:
-        msg = f"Index in index groups is out of bounds for colors: {error}"
-        raise IndexError(msg) from error
-
-    # Blending process
-    for group in index_groups:
-        if len(group):  # A mean-operation with an empty group would return nan values.
-            blended_colors[group] = np.mean(colors[group], axis=0)
-
-    return blended_colors
