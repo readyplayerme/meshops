@@ -32,3 +32,14 @@ def mock_image():
 
     filepath = files(tests.mocks).joinpath("input-img.png")
     return ski.io.imread(filepath)
+
+
+@pytest.fixture
+def mock_image_blended():
+    """Return an image as a numpy array."""
+    from importlib.resources import files
+
+    import tests.mocks
+
+    filepath = files(tests.mocks).joinpath("input-img-blended.png")
+    return ski.io.imread(filepath)

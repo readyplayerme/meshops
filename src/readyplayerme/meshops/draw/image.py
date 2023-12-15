@@ -68,4 +68,4 @@ def blend_uv_seams(mesh: mops.Mesh, image: Image) -> Image:
     blurred_mask = np.power(blurred_mask, 1.5)
 
     # Blend in average vertex color at the UV seams.
-    return blend_images(image, raster_image, blurred_mask)
+    return blend_images(image, raster_image, blurred_mask).astype(np.uint8)

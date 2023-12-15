@@ -4,6 +4,7 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
+import readyplayerme.meshops.draw.image as img
 import readyplayerme.meshops.mesh as mops
 
 
@@ -28,3 +29,11 @@ def test_access_material_should_fail(gltf_simple_file: str | Path):
     """Test the simple gltf does not have a material."""
     mesh = mops.read_mesh(gltf_simple_file)
     assert mesh.material is None, "Mesh should not have a material."
+
+
+def test_seam_blend(gltf_file_with_basecolor_texture: str | Path, mock_image_blended: npt.NDArray[Any]):
+    """Test the seam blending."""
+    local_mesh = mops.read_mesh(gltf_file_with_basecolor_texture)
+    extracted_image = local_mesh.material.baseColorTexture
+    blended_image = img.blend_uv_seams(local_mesh, extracted_image)
+    assert np.array_equal(blended_image, mock_image_blended), "The blended image should match the mock-up"
