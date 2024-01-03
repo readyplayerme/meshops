@@ -32,7 +32,17 @@ class Material:
     def from_trimesh_material(material: PBRMaterial) -> "Material":
         """Create a Material object from a trimesh Material object."""
         base_color_texture = np.array(material.baseColorTexture) if material.baseColorTexture else None
+        # Set sane defaults for base color factor if not present.
+        if material.baseColorFactor is not None:
+            basecolor_factor = material.baseColorFactor
+        else:
+            basecolor_factor = np.array([255, 255, 255, 255], dtype=np.uint8)
         emissive_texture = np.array(material.emissiveTexture) if material.emissiveTexture else None
+        # Set sane defaults for emissive factor if not present.
+        if material.emissiveFactor is not None:
+            emissive_factor = material.emissiveFactor
+        else:
+            emissive_factor = np.array([0.0, 0.0, 0.0], dtype=np.float64)
         metallic_roughness_texture = (
             np.array(material.metallicRoughnessTexture) if material.metallicRoughnessTexture else None
         )
@@ -42,10 +52,10 @@ class Material:
         return Material(
             name=material.name,
             baseColorTexture=base_color_texture,
-            baseColorFactor=material.baseColorFactor or np.array([255, 255, 255, 255], dtype=np.uint8),
+            baseColorFactor=basecolor_factor,
             doubleSided=material.doubleSided or False,
             emissiveTexture=emissive_texture,
-            emissiveFactor=material.emissiveFactor or np.array([0.0, 0.0, 0.0], dtype=np.float64),
+            emissiveFactor=emissive_factor,
             metallicRoughnessTexture=metallic_roughness_texture,
             metallicFactor=material.metallicFactor or (0.0 if metallic_roughness_texture is None else 1.0),
             roughnessFactor=material.roughnessFactor or 1.0,
