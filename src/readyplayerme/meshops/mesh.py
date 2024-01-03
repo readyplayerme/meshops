@@ -56,9 +56,13 @@ def read_gltf(filename: str | Path) -> Mesh:
         raise OSError(msg) from error
     # Convert the loaded trimesh into a Mesh object for abstraction.
     try:
+        # trimesh doesn't load UVs if there's no material.
         uvs = loaded.visual.uv  # Fails if it has ColorVisuals instead of TextureVisuals.
     except AttributeError:
-        uvs = None
+        if isinstance(loaded.visual, trimesh.visual.color.ColorVisuals):
+            uvs = loaded.visual.to_texture().uv  # Sets the shape of UVs, but values are all 0.5.
+        else:
+            uvs = None
     try:
         material = Material.from_trimesh_material(loaded.visual.material)
     except AttributeError:
