@@ -25,9 +25,9 @@ def test_get_basecolor_texture(gltf_file_with_basecolor_texture: str | Path, moc
     assert np.array_equal(extracted_image, mock_image), "The extracted image does not match the expected image."
 
 
-def test_access_material_should_fail(gltf_simple_file: str | Path):
-    """Test the simple gltf does not have a material."""
-    mesh = mops.read_mesh(gltf_simple_file)
+def test_access_material_should_fail(gltf_file_no_material: str | Path):
+    """Test the a gltf that does not have a material."""
+    mesh = mops.read_mesh(gltf_file_no_material)
     assert mesh.material is None, "Mesh should not have a material."
 
 

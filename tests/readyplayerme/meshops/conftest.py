@@ -14,6 +14,16 @@ def gltf_simple_file():
 
 
 @pytest.fixture
+def gltf_file_no_material():
+    """Return a path to a glTF file that does not have a material."""
+    from importlib.resources import files
+
+    import tests.mocks
+
+    return files(tests.mocks).joinpath("no-material.glb")
+
+
+@pytest.fixture
 def gltf_file_with_basecolor_texture():
     """Return a path to a glTF file that contains a baseColorTexture."""
     from importlib.resources import files
