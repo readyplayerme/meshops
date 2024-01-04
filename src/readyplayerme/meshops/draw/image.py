@@ -2,6 +2,7 @@
 from collections.abc import Callable
 
 import numpy as np
+import numpy.typing as npt
 import skimage
 from scipy.ndimage import gaussian_filter
 
@@ -192,6 +193,24 @@ def draw_lines(
     return image
 
 
+def create_mask(width: int, height: int, triangle_coords: npt.NDArray[np.int16]) -> Image:
+    """Create a binary mask image from polygons.
+
+    We use individual triangles to draw the mask, as it's not easy to draw polygons with genus > 0, i.e. with holes.
+
+    :param width: Width of the mask image in pixels.
+    :param height: Height of the mask image in pixels.
+    :param triangle_coords: The triangles to draw in the mask. Shape (t, 3, 2), t triangles, 3 pairs of 2D coordinates.
+    Coordinates are in image space.
+    :return: A grayscale image mask as uint8 with white (255) being the masked areas.
+    """
+    mask = np.zeros((height, width), dtype=np.uint8)
+    for triangle in triangle_coords:
+        rr, cc = skimage.draw.polygon(triangle[:, 1], triangle[:, 0])
+        mask[rr, cc] = 255
+    return mask
+
+
 def rasterize(
     image: Image,
     edges: Edges,
@@ -265,9 +284,9 @@ def blend_uv_seams(mesh: mops.Mesh, image: Image) -> Image:
     vertex_colors = image[pixel_coords[:, 1], pixel_coords[:, 0]]
     mixed_colors = readyplayerme.meshops.draw.color.blend_colors(vertex_colors, seam_vertices)
 
-    # Creating the vertex mask
+    # Creating the vertex mask.
     vertex_color_mask = np.zeros((len(mesh.vertices), 1), dtype=float)  # Todo mask shape should be 1D
-    # Set overlapping vertices to white to have a 0-1 mask
+    # Set overlapping vertices to white to have a 0-1 mask.
     vertex_color_mask[np.concatenate(seam_vertices).flatten()] = [1.0]
 
     # Rasterize the vertex color and mask for blending.

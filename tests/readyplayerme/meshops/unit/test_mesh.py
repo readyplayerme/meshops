@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from readyplayerme.meshops import mesh
-from readyplayerme.meshops.types import IndexGroups, Indices, PixelCoord, UVs, Vertices
+from readyplayerme.meshops.types import Faces, IndexGroups, Indices, PixelCoord, UVs, Vertices
 
 
 class TestReadMesh:
@@ -171,3 +171,44 @@ def test_uv_to_image_coords_should_fail(uvs: UVs, width: int, height: int, indic
     """Test the uv_to_image_space function raises expected exceptions."""
     with pytest.raises(IndexError):
         mesh.uv_to_image_coords(uvs, width, height, indices)
+
+
+def test_get_faces_image_coords(mock_mesh):
+    """Test the get_faces_image_coords function with valid inputs."""
+    output = mesh.get_faces_image_coords(mock_mesh.faces, mock_mesh.uv_coords, 8, 8)
+    expected = np.array(
+        [
+            [[5, 1], [0, 1], [3, 3]],
+            [[3, 3], [4, 3], [5, 1]],
+            [[4, 3], [4, 5], [6, 3]],
+            [[4, 5], [3, 4], [2, 4]],
+            [[3, 3], [3, 4], [4, 3]],
+            [[2, 4], [0, 1], [0, 6]],
+            [[3, 3], [2, 4], [3, 4]],
+            [[5, 1], [5, 0], [0, 1]],
+            [[2, 4], [3, 3], [0, 1]],
+            [[4, 3], [3, 4], [4, 5]],
+            [[4, 5], [0, 6], [4, 7]],
+            [[6, 3], [4, 5], [4, 7]],
+            [[4, 5], [2, 4], [0, 6]],
+        ],
+    )
+    assert output.shape == (len(mock_mesh.faces), 3, 2), "The image coordinates' shape should be (n_faces, 3, 2)."
+    np.testing.assert_array_equal(output, expected, "The image coordinates should match the expected coordinates.")
+
+
+@pytest.mark.parametrize(
+    "faces, uvs, width, height",
+    [
+        # Too few UV coords
+        (np.array([[0, 1, 2]]), np.array([[0.5, 0.5], [0.25, 0.75]]), 100, 100),
+        # No UV coords
+        (np.array([[0, 1, 2]]), np.array([]), 1, 1),
+        # No faces
+        (np.array([[]]), np.array([[0.5, 0.5], [0.25, 0.75], [0.0, 0.0]]), 1, 1),
+    ],
+)
+def test_get_faces_image_coords_should_fail(faces: Faces, uvs: UVs, width: int, height: int):
+    """Test the get_faces_image_coords function raises expected exceptions."""
+    with pytest.raises(IndexError):
+        mesh.get_faces_image_coords(faces, uvs, width, height)

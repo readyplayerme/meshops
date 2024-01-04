@@ -3,6 +3,7 @@
 from collections.abc import Callable
 
 import numpy as np
+import numpy.typing as npt
 import pytest
 
 from readyplayerme.meshops import draw
@@ -359,6 +360,53 @@ def test_clip_image(input_array, expected_output):
     """Test the clean_image function with various input scenarios."""
     output = draw.clip_image(input_array, inplace=False)
     np.testing.assert_array_equal(output, expected_output)
+
+
+@pytest.mark.parametrize(
+    "width, height, coords, expected_output",
+    [
+        (
+            8,
+            8,
+            np.array(
+                [
+                    [[5, 1], [0, 1], [3, 3]],
+                    [[3, 3], [4, 3], [5, 1]],
+                    [[4, 3], [4, 5], [6, 3]],
+                    [[4, 5], [3, 4], [2, 4]],
+                    [[3, 3], [3, 4], [4, 3]],
+                    [[2, 4], [0, 1], [0, 6]],
+                    [[3, 3], [2, 4], [3, 4]],
+                    [[5, 1], [5, 0], [0, 1]],
+                    [[2, 4], [3, 3], [0, 1]],
+                    [[4, 3], [3, 4], [4, 5]],
+                    [[4, 5], [0, 6], [4, 7]],
+                    [[6, 3], [4, 5], [4, 7]],
+                    [[4, 5], [2, 4], [0, 6]],
+                ],
+                dtype=np.int16,
+            ),
+            np.array(
+                [
+                    [0, 0, 0, 0, 0, 255, 0, 0],
+                    [255, 255, 255, 255, 255, 255, 0, 0],
+                    [255, 255, 255, 255, 255, 0, 0, 0],
+                    [255, 255, 255, 255, 255, 255, 255, 0],
+                    [255, 255, 255, 255, 255, 255, 0, 0],
+                    [255, 255, 255, 255, 255, 255, 0, 0],
+                    [255, 255, 255, 255, 255, 0, 0, 0],
+                    [0, 0, 0, 0, 255, 0, 0, 0],
+                ],
+                dtype=np.uint8,
+            ),
+        )
+    ],
+)
+def test_create_mask(width: int, height: int, coords: npt.NDArray[np.int16], expected_output: Image):
+    """Test the create_mask function with valid inputs."""
+    mask = draw.create_mask(width, height, coords)
+    assert mask.shape == (height, width), f"Mask shape {mask.shape} does not match expected shape {(width, height)}."
+    np.testing.assert_array_equal(mask, expected_output, err_msg="Mask did not match expected output.")
 
 
 @pytest.mark.parametrize(

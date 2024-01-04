@@ -19,10 +19,10 @@ class Mesh:
     """
 
     vertices: Vertices
-    uv_coords: UVs | None
     edges: Edges
     faces: Faces
-    material: Material | None
+    uv_coords: UVs | None = None
+    material: Material | None = None
 
 
 def read_mesh(filename: str | Path) -> Mesh:
@@ -91,7 +91,7 @@ def get_boundary_vertices(edges: Edges) -> Indices:
 
 
 def get_overlapping_vertices(
-    vertices_pos: Vertices, indices: Indices | None = None, tolerance: float = 0.00001
+    vertices_pos: Vertices, indices: Indices | None = None, tolerance: float = 1e-5
 ) -> IndexGroups:
     """Return the indices of the vertices grouped by the same position.
 
@@ -168,3 +168,28 @@ def uv_to_image_coords(
     img_coords[:, 1] = ((1 - wrapped_uvs[:, 1]) * (height - 0.5)).astype(np.uint16)
 
     return img_coords
+
+
+def get_faces_image_coords(
+    faces: Faces,
+    uvs: UVs,
+    width: int,
+    height: int,
+) -> PixelCoord:  # Shape (n_faces, 3, 2)
+    """Return the pixel coordinates of the vertices of each face.
+
+    :param faces: The faces of the mesh.
+    :param uvs: The UV coordinates for the vertices of the faces.
+    :param width: Width of the image in pixels.
+    :param height: Height of the image in pixels.
+    :return: Image space coordinates of faces as shape (n_faces, 3, 2).
+    """
+    vert_indices = faces.ravel()
+    try:
+        uv_coords = uvs[vert_indices]
+    except IndexError as error:
+        msg = f"Vertex index {np.where(vert_indices>=len(uvs))[0]} is out of bounds for UVs with shape {uvs.shape}."
+        raise IndexError(msg) from error
+    pixel_coords = uv_to_image_coords(uv_coords, width, height)
+    # Reshape the pixel coordinates to match the faces.
+    return pixel_coords.reshape((*faces.shape, 2))
