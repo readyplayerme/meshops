@@ -1,10 +1,10 @@
-# MeshOps
+# MeshOps &middot; [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/readyplayerme/meshops/blob/main/LICENSE.txt)
 
 A collection of tools for dealing with mesh related data.
 
 ## Setup
 
-You'll find setup instruction of this project in the CONTRIBUTING.md file.
+You'll find setup instruction of this project in the [CONTRIBUTING.md](https://github.com/readyplayerme/meshops/blob/main/CONTRIBUTING.md) file.
 
 ## UV Seams Transitioning
 
