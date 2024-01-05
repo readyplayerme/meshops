@@ -8,7 +8,12 @@ def get_image_color_mode(image: Image) -> ColorMode:
     """
     Determine the color mode of an image.
 
-    :param image: An image array.
+    If the image only has 2 dimensions, it is assumed to be grayscale.
+    If the image has 3 dimensions, the last dimension is checked for the number of channels.
+    With 3 channels, the image is assumed to be RGB. With 4 channels, the image is assumed to be RGBA.
+    Other dimensions are not supported.
+
+    :param image: An image.
     :return ColorMode:: Enum indicating the color mode of the image (GRAYSCALE, RGB, or RGBA).
     """
     try:
