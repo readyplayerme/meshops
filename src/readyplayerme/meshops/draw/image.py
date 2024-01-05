@@ -4,7 +4,7 @@ from collections.abc import Callable
 import numpy as np
 import numpy.typing as npt
 import skimage
-from scipy.ndimage import gaussian_filter
+from scipy.ndimage import gaussian_filter, maximum_filter
 
 from readyplayerme.meshops import mesh as mops
 from readyplayerme.meshops.draw.color import (
@@ -308,3 +308,36 @@ def blend_uv_seams(mesh: mops.Mesh, image: Image) -> Image:
 
     # Blend in average vertex color at the UV seams.
     return blend_images(image, raster_image, blurred_mask).astype(np.uint8)
+
+
+def get_position_map(width: int, height: int, mesh: mops.Mesh, padding: int = 4) -> Image:
+    """Get a position map from the given mesh.
+
+    The positions are normalized and then mapped to the 8-bit range [0, 255].
+
+    :param width: Width of the position map in pixels.
+    :param height: Height of the position map in pixels.
+    :param mesh: The mesh to use for creating the position map.
+    :param padding: Padding in pixels to add around the UV shells. Default 4.
+    :return: The position map as uint8.
+    """
+    positions = mesh.vertices
+    # Since 8-bit images only store positive numbers up to 255, first normalize the positions to the range [0, 1].
+    positions = positions - positions.min(axis=0)
+    positions = positions / positions.max(axis=0)
+    # Map the normalized positions to the 8-bit color format.
+    positions = (positions * 255).astype(np.uint8)
+    # Create an image from the positions.
+    image_coords = mops.uv_to_image_coords(mesh.uv_coords, width, height)
+    triangle_coords = mops.get_faces_image_coords(mesh.faces, mesh.uv_coords, width, height)
+    pos_map = create_nan_image(width, height, ColorMode.RGB)
+    pos_map = rasterize(pos_map, mesh.edges, image_coords, positions, inplace=True)
+    # Constrain colored pixels to the UV shells.
+    mask = create_mask(width, height, triangle_coords).astype(bool)[:, :, np.newaxis].repeat(3, axis=2)
+    pos_map *= mask
+    # Add padding around the UV shells.
+    if padding > 0:
+        padded = maximum_filter(pos_map, size=padding, axes=[0, 1])
+        pos_map[~mask] = padded[~mask]
+
+    return pos_map.astype(np.uint8)
