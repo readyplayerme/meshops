@@ -7,6 +7,7 @@ import numpy.typing as npt
 import pytest
 
 from readyplayerme.meshops import draw
+from readyplayerme.meshops.mesh import Mesh
 from readyplayerme.meshops.types import Color, ColorMode, Edges, Image, PixelCoord
 
 
@@ -57,7 +58,7 @@ from readyplayerme.meshops.types import Color, ColorMode, Edges, Image, PixelCoo
         ),
     ],
 )
-def test_blend_images(image_1, image_2, mask, expected_output):
+def test_blend_images(image_1: Image, image_2: Image, mask: Image, expected_output: Image):
     """Test the blend_images function with various input scenarios."""
     output = draw.blend_images(image_1, image_2, mask)
     np.testing.assert_array_equal(output, expected_output)
@@ -84,7 +85,7 @@ def test_blend_images(image_1, image_2, mask, expected_output):
         ),
     ],
 )
-def test_blend_images_should_fail(image_1, image_2, mask, expected_exception):
+def test_blend_images_should_fail(image_1: Image, image_2: Image, mask: Image, expected_exception: Image):
     """Test the blend_images function with invalid input scenarios."""
     with pytest.raises(expected_exception):
         draw.blend_images(image_1, image_2, mask)
@@ -113,7 +114,7 @@ def test_blend_images_should_fail(image_1, image_2, mask, expected_exception):
         (np.array([np.nan, 2, np.nan]), np.array([2, 2, 2])),
     ],
 )
-def test_interpolate_segment(input_segment, expected_output):
+def test_interpolate_segment(input_segment: Image, expected_output: Image):
     """Test the interpolate_segment function with various input scenarios."""
     output = draw.interpolate_segment(input_segment)
     np.testing.assert_array_equal(output, expected_output)
@@ -223,7 +224,14 @@ def test_interpolate_segment(input_segment, expected_output):
         ),
     ],
 )
-def test_draw_lines(image, edges, image_coords, colors, interpolate_func, expected_output):
+def test_draw_lines(
+    image: Image,
+    edges: Edges,
+    image_coords: PixelCoord,
+    colors: Color,
+    interpolate_func: Callable[[Color, Color, int], Color],
+    expected_output: Image,
+):
     """Test draw_lines function with various edge cases."""
     output = draw.draw_lines(image, edges, image_coords, colors, interpolate_func)
     np.testing.assert_array_equal(output, expected_output)
@@ -267,7 +275,7 @@ def test_draw_lines(image, edges, image_coords, colors, interpolate_func, expect
         (np.array([[np.nan, np.nan], [np.nan, np.nan]]), np.array([[np.nan, np.nan], [np.nan, np.nan]])),
     ],
 )
-def test_lerp_nans_horizontally(input_array, expected_output):
+def test_lerp_nans_horizontally(input_array: Image, expected_output: Image):
     """Test vectorized_lerp_nans_vertically function with various input scenarios."""
     actual_output = draw.lerp_nans_horizontally(input_array)
     np.testing.assert_array_equal(actual_output, expected_output)
@@ -315,7 +323,7 @@ def test_lerp_nans_horizontally(input_array, expected_output):
         (np.array([[np.nan, np.nan], [np.nan, np.nan]]), np.array([[np.nan, np.nan], [np.nan, np.nan]])),
     ],
 )
-def test_lerp_nans_vertically(input_array, expected_output):
+def test_lerp_nans_vertically(input_array: Image, expected_output: Image):
     """Test vectorized_lerp_nans_horizontally function with various input scenarios."""
     actual_output = draw.lerp_nans_vertically(input_array)
     np.testing.assert_array_equal(actual_output, expected_output)
@@ -329,7 +337,7 @@ def test_lerp_nans_vertically(input_array, expected_output):
         (100, 100, ColorMode.GRAYSCALE),  # Grayscale
     ],
 )
-def test_create_nan_image(width, height, mode):
+def test_create_nan_image(width: int, height: int, mode: ColorMode):
     """Test the create_nan_image function with valid inputs."""
     result = draw.create_nan_image(width, height, mode)
     assert result.shape == tuple(filter(bool, (height, width, mode.value)))
@@ -347,7 +355,7 @@ def test_create_nan_image(width, height, mode):
         (100, 100.5, TypeError),  # Float height
     ],
 )
-def test_create_nan_image_should_fail(width, height, error):
+def test_create_nan_image_should_fail(width: int, height: int, error: type[Exception]):
     """Test the create_nan_image function with invalid inputs."""
     with pytest.raises(error):
         draw.create_nan_image(width, height)
@@ -374,7 +382,7 @@ def test_create_nan_image_should_fail(width, height, error):
         (np.array([[300, -100], [500, 600]], dtype=np.float32), np.array([[255, 0], [255, 255]], dtype=np.float32)),
     ],
 )
-def test_clip_image(input_array, expected_output):
+def test_clip_image(input_array: Image, expected_output: Image):
     """Test the clean_image function with various input scenarios."""
     output = draw.clip_image(input_array, inplace=False)
     np.testing.assert_array_equal(output, expected_output)
@@ -688,7 +696,7 @@ def test_rasterize_should_fail(
     ],
     indirect=["mock_mesh"],
 )
-def test_blend_uv_seams(mock_mesh, image, expected_output):
+def test_blend_uv_seams(mock_mesh: Mesh, image: Image, expected_output: Image):
     """Test the blend_uv_seams function with valid inputs."""
     output = draw.blend_uv_seams(mock_mesh, image)
     np.testing.assert_array_equal(output, expected_output)
