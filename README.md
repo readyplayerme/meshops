@@ -6,6 +6,12 @@ A collection of tools for dealing with mesh related data.
 
 You'll find setup instruction of this project in the [CONTRIBUTING.md](https://github.com/readyplayerme/meshops/blob/main/CONTRIBUTING.md) file.
 
+## Position Map
+
+Position maps encode locations on the surface of a mesh as color values in an image using the UV layout.
+Since 8-bit colors are positive values only and capped at 255, the linear transformation of the positions into the color space is lossy and not invertible, meaning that the original positions cannot be recovered from the color values.
+However, these maps can be utilized as control signals for various tasks such as texture synthesis and for shader effects.
+
 ## UV Seams Transitioning
 
 UV seams are splits in a triangle mesh that, however, is supposed to represent a continuous surface across these splits.
