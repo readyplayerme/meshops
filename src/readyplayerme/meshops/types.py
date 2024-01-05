@@ -24,7 +24,7 @@ class ColorMode(Enum):
 
 # The Image type is based on numpy arrays for compatibility with skimage. Floats are used to allow NANs,
 # which are not supported by uint8, but the range of floats is supposed to be [0, 255] for colors and [0, 1] for masks.
-Image: TypeAlias = npt.NDArray[np.uint8] | npt.NDArray[np.float32] | npt.NDArray[np.float64]  # Shape (h, w, c)
+Image: TypeAlias = npt.NDArray[np.uint8] | npt.NDArray[np.float32] | npt.NDArray[np.float64]  # Shape (h, w[, c]) 2D/3D
 
 
 UVs: TypeAlias = npt.NDArray[np.float32] | npt.NDArray[np.float64]  # Shape (i, 2)

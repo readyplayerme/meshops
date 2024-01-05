@@ -1,21 +1,13 @@
 """Pytest fixtures for meshops unit tests."""
-from dataclasses import dataclass
-
 import numpy as np
-import numpy.typing as npt
 import pytest
+
+from readyplayerme.meshops.mesh import Mesh
 
 
 @pytest.fixture
 def mock_mesh():
     """Return a mocked instance of a mesh."""
-
-    @dataclass
-    class MockMesh:
-        vertices: npt.NDArray[np.float32]
-        edges: npt.NDArray[np.int32]
-        faces: npt.NDArray[np.int32]
-
     vertices = np.array(
         [
             [-1.0, -1.0, 1.0],
@@ -91,7 +83,22 @@ def mock_mesh():
             [8, 1, 0],
         ]
     )
-    return MockMesh(vertices=vertices, edges=edges, faces=faces)
+    uv = np.array(
+        [
+            [0.0000885235713, 0.108867466],
+            [0.376611322, 0.384406567],
+            [0.0000885531263, 0.842295170],
+            [0.417839319, 0.500414848],
+            [0.650038540, 0.0000885725021],
+            [0.482583314, 0.375091314],
+            [0.706107318, 0.999911427],
+            [0.540375590, 0.470338583],
+            [0.541970432, 0.256122291],
+            [0.736137152, 0.735312700],
+            [0.869261205, 0.525972605],
+        ]
+    )
+    return Mesh(vertices=vertices, edges=edges, faces=faces, uv_coords=uv)
 
 
 @pytest.fixture

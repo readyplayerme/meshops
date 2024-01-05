@@ -3,8 +3,10 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
+import pytest
 
 import readyplayerme.meshops.mesh as mops
+from readyplayerme.meshops import draw
 
 
 def test_boundary_vertices_from_file(gltf_simple_file: str | Path):
@@ -24,7 +26,16 @@ def test_get_basecolor_texture(gltf_file_with_basecolor_texture: str | Path, moc
     assert np.array_equal(extracted_image, mock_image), "The extracted image does not match the expected image."
 
 
-def test_access_material_should_fail(gltf_simple_file: str | Path):
-    """Test the simple gltf does not have a material."""
-    mesh = mops.read_mesh(gltf_simple_file)
+def test_access_material_should_fail(gltf_file_no_material: str | Path):
+    """Test the a gltf that does not have a material."""
+    mesh = mops.read_mesh(gltf_file_no_material)
     assert mesh.material is None, "Mesh should not have a material."
+
+
+@pytest.mark.skip(reason="This test passes locally on Windows, but fails in github action. Maybe an OS issue?")
+def test_seam_blend(gltf_file_with_basecolor_texture: str | Path, mock_image_blended: npt.NDArray[Any]):
+    """Test the seam blending."""
+    local_mesh = mops.read_mesh(gltf_file_with_basecolor_texture)
+    extracted_image = local_mesh.material.baseColorTexture
+    blended_image = draw.blend_uv_seams(local_mesh, extracted_image)
+    assert np.array_equal(blended_image, mock_image_blended), "The blended image should match the mock-up"

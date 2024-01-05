@@ -8,7 +8,7 @@ import trimesh
 from scipy.spatial import cKDTree
 
 from readyplayerme.meshops.material import Material
-from readyplayerme.meshops.types import Color, Edges, Faces, IndexGroups, Indices, PixelCoord, UVs, Vertices
+from readyplayerme.meshops.types import Edges, Faces, IndexGroups, Indices, PixelCoord, UVs, Vertices
 
 
 @dataclass()
@@ -19,10 +19,10 @@ class Mesh:
     """
 
     vertices: Vertices
-    uv_coords: UVs | None
     edges: Edges
     faces: Faces
-    material: Material | None
+    uv_coords: UVs | None = None
+    material: Material | None = None
 
 
 def read_mesh(filename: str | Path) -> Mesh:
@@ -56,9 +56,13 @@ def read_gltf(filename: str | Path) -> Mesh:
         raise OSError(msg) from error
     # Convert the loaded trimesh into a Mesh object for abstraction.
     try:
+        # trimesh doesn't load UVs if there's no material.
         uvs = loaded.visual.uv  # Fails if it has ColorVisuals instead of TextureVisuals.
     except AttributeError:
-        uvs = None
+        if isinstance(loaded.visual, trimesh.visual.color.ColorVisuals):
+            uvs = loaded.visual.to_texture().uv  # Sets the shape of UVs, but values are all 0.5.
+        else:
+            uvs = None
     try:
         material = Material.from_trimesh_material(loaded.visual.material)
     except AttributeError:
@@ -87,7 +91,7 @@ def get_boundary_vertices(edges: Edges) -> Indices:
 
 
 def get_overlapping_vertices(
-    vertices_pos: Vertices, indices: Indices | None = None, tolerance: float = 0.00001
+    vertices_pos: Vertices, indices: Indices | None = None, tolerance: float = 1e-5
 ) -> IndexGroups:
     """Return the indices of the vertices grouped by the same position.
 
@@ -166,33 +170,26 @@ def uv_to_image_coords(
     return img_coords
 
 
-def blend_colors(colors: Color, index_groups: IndexGroups) -> Color:
-    """Blend colors according to the given grouped indices.
+def get_faces_image_coords(
+    faces: Faces,
+    uvs: UVs,
+    width: int,
+    height: int,
+) -> PixelCoord:  # Shape (n_faces, 3, 2)
+    """Return the pixel coordinates of the vertices of each face.
 
-    Colors at indices in the same group are blended into having the same color.
-
-    :param index_groups: Groups of indices. Indices must be within the bounds of the colors array.
-    :param vertex_colors: Colors.
-    :return: Colors with new blended colors at given indices.
+    :param faces: The faces of the mesh.
+    :param uvs: The UV coordinates for the vertices of the faces.
+    :param width: Width of the image in pixels.
+    :param height: Height of the image in pixels.
+    :return: Image space coordinates of faces as shape (n_faces, 3, 2).
     """
-    if not len(colors):
-        return np.empty_like(colors)
-
-    blended_colors = np.copy(colors)
-    if not index_groups:
-        return blended_colors
-
-    # Check that the indices are within the bounds of the colors array,
-    # so we don't start any operations that would later fail.
+    vert_indices = faces.ravel()
     try:
-        colors[np.hstack(index_groups)]
+        uv_coords = uvs[vert_indices]
     except IndexError as error:
-        msg = f"Index in index groups is out of bounds for colors: {error}"
+        msg = f"Vertex index {np.where(vert_indices>=len(uvs))[0]} is out of bounds for UVs with shape {uvs.shape}."
         raise IndexError(msg) from error
-
-    # Blending process
-    for group in index_groups:
-        if len(group):  # A mean-operation with an empty group would return nan values.
-            blended_colors[group] = np.mean(colors[group], axis=0)
-
-    return blended_colors
+    pixel_coords = uv_to_image_coords(uv_coords, width, height)
+    # Reshape the pixel coordinates to match the faces.
+    return pixel_coords.reshape((*faces.shape, 2))

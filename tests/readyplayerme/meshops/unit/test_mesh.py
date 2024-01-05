@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from readyplayerme.meshops import mesh
-from readyplayerme.meshops.types import IndexGroups, Indices, PixelCoord, UVs, Vertices
+from readyplayerme.meshops.types import Faces, IndexGroups, Indices, PixelCoord, UVs, Vertices
 
 
 class TestReadMesh:
@@ -173,51 +173,42 @@ def test_uv_to_image_coords_should_fail(uvs: UVs, width: int, height: int, indic
         mesh.uv_to_image_coords(uvs, width, height, indices)
 
 
-@pytest.mark.parametrize(
-    "colors, index_groups, expected",
-    [
-        # Case with simple groups and distinct colors
-        (
-            np.array([[255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0]]),
-            [[0, 1], [2, 3]],
-            np.array([[127, 127, 0], [127, 127, 0], [127, 127, 127], [127, 127, 127]]),
-        ),
-        # Case with a single group
-        (
-            np.array([[100, 100, 100], [200, 200, 200]]),
-            [[0, 1]],
-            np.array([[150, 150, 150], [150, 150, 150]]),
-        ),
-        # Case with groups of 1 element
-        (
-            np.array([[100, 0, 0], [0, 100, 0], [0, 0, 100]]),
-            [[0], [1], [2]],
-            np.array([[100, 0, 0], [0, 100, 0], [0, 0, 100]]),
-        ),
-        # Case with empty colors array
-        (np.array([], dtype=np.uint8), [[0, 1]], np.array([])),
-        # Case with empty groups
-        (np.array([[255, 0, 0], [0, 255, 0]]), [], np.array([[255, 0, 0], [0, 255, 0]])),
-        # Case with empty colors and groups
-        (np.array([], dtype=np.uint8), [], np.array([], dtype=np.uint8)),
-    ],
-)
-def test_blend_colors(colors, index_groups, expected):
-    """Test the blend_colors function."""
-    blended_colors = mesh.blend_colors(colors, index_groups)
-    np.testing.assert_array_equal(blended_colors, expected)
+def test_get_faces_image_coords(mock_mesh):
+    """Test the get_faces_image_coords function with valid inputs."""
+    output = mesh.get_faces_image_coords(mock_mesh.faces, mock_mesh.uv_coords, 8, 8)
+    expected = np.array(
+        [
+            [[5, 1], [0, 1], [3, 3]],
+            [[3, 3], [4, 3], [5, 1]],
+            [[4, 3], [4, 5], [6, 3]],
+            [[4, 5], [3, 4], [2, 4]],
+            [[3, 3], [3, 4], [4, 3]],
+            [[2, 4], [0, 1], [0, 6]],
+            [[3, 3], [2, 4], [3, 4]],
+            [[5, 1], [5, 0], [0, 1]],
+            [[2, 4], [3, 3], [0, 1]],
+            [[4, 3], [3, 4], [4, 5]],
+            [[4, 5], [0, 6], [4, 7]],
+            [[6, 3], [4, 5], [4, 7]],
+            [[4, 5], [2, 4], [0, 6]],
+        ],
+    )
+    assert output.shape == (len(mock_mesh.faces), 3, 2), "The image coordinates' shape should be (n_faces, 3, 2)."
+    np.testing.assert_array_equal(output, expected, "The image coordinates should match the expected coordinates.")
 
 
 @pytest.mark.parametrize(
-    "colors, index_groups",
+    "faces, uvs, width, height",
     [
-        # Case with out-of-bounds indices
-        (np.array([[255, 0, 0], [0, 255, 0]]), [[0, 2]]),
-        # Case with negative index
-        (np.array([[255, 0, 0], [0, 255, 0]]), [[-3, 1]]),
+        # Too few UV coords
+        (np.array([[0, 1, 2]]), np.array([[0.5, 0.5], [0.25, 0.75]]), 100, 100),
+        # No UV coords
+        (np.array([[0, 1, 2]]), np.array([]), 1, 1),
+        # No faces
+        (np.array([[]]), np.array([[0.5, 0.5], [0.25, 0.75], [0.0, 0.0]]), 1, 1),
     ],
 )
-def test_blend_colors_should_fail(colors, index_groups):
-    """Test error handling in blend_colors function."""
+def test_get_faces_image_coords_should_fail(faces: Faces, uvs: UVs, width: int, height: int):
+    """Test the get_faces_image_coords function raises expected exceptions."""
     with pytest.raises(IndexError):
-        mesh.blend_colors(colors, index_groups)
+        mesh.get_faces_image_coords(faces, uvs, width, height)
