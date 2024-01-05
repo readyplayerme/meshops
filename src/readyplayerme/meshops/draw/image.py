@@ -6,9 +6,13 @@ import numpy.typing as npt
 import skimage
 from scipy.ndimage import gaussian_filter
 
-import readyplayerme.meshops.draw.color
 from readyplayerme.meshops import mesh as mops
-from readyplayerme.meshops.draw.color import get_color_array_color_mode, get_image_color_mode, interpolate_values
+from readyplayerme.meshops.draw.color import (
+    blend_colors,
+    get_color_array_color_mode,
+    get_image_color_mode,
+    interpolate_values,
+)
 from readyplayerme.meshops.types import Color, ColorMode, Edges, Image, PixelCoord
 
 
@@ -174,6 +178,8 @@ def draw_lines(
     :param interpolate_func: Function to interpolate colors.
     :return: Image with interpolated lines.
     """
+    if get_color_array_color_mode(colors) == ColorMode.GRAYSCALE:
+        colors = colors[:, np.newaxis]
     for edge in edges:
         try:
             color0, color1 = colors[edge].astype(np.float32)
@@ -282,15 +288,16 @@ def blend_uv_seams(mesh: mops.Mesh, image: Image) -> Image:
     # Sample colors from all UV coordinates and blend only colors of overlapping vertices.
     pixel_coords = mops.uv_to_image_coords(mesh.uv_coords, image.shape[0], image.shape[1])
     vertex_colors = image[pixel_coords[:, 1], pixel_coords[:, 0]]
-    mixed_colors = readyplayerme.meshops.draw.color.blend_colors(vertex_colors, seam_vertices)
+    mixed_colors = blend_colors(vertex_colors, seam_vertices)
 
     # Creating the vertex mask.
-    vertex_color_mask = np.zeros((len(mesh.vertices), 1), dtype=float)  # Todo mask shape should be 1D
+    vertex_color_mask = np.zeros(len(mesh.vertices), dtype=float)
     # Set overlapping vertices to white to have a 0-1 mask.
-    vertex_color_mask[np.concatenate(seam_vertices).flatten()] = [1.0]
+    vertex_color_mask[np.concatenate(seam_vertices).flatten()] = 1.0
 
     # Rasterize the vertex color and mask for blending.
-    raster_image = create_nan_image(image.shape[0], image.shape[1], ColorMode.RGB)
+    image_color_mode = get_image_color_mode(image)
+    raster_image = create_nan_image(image.shape[0], image.shape[1], image_color_mode)
     raster_image = rasterize(raster_image, mesh.edges, pixel_coords, mixed_colors, inplace=True)
     image_mask = create_nan_image(image.shape[0], image.shape[1], ColorMode.GRAYSCALE)
     image_mask = rasterize(image_mask, mesh.edges, pixel_coords, vertex_color_mask, inplace=True)
