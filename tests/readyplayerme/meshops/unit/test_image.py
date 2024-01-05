@@ -149,13 +149,31 @@ def test_interpolate_segment(input_segment, expected_output):
                 dtype=np.uint8,
             ),
         ),
-        # Test with grayscale image
+        # Test with grayscale image, grayscale 2D colors (2,1)
         (
             np.zeros((5, 5), dtype=np.uint8),  # Grayscale image array
             np.array([[0, 1]]),  # Edge from point 0 to point 1
             np.array([[0, 0], [4, 4]]),  # Coordinates for the points
-            np.array([[0], [255]], dtype=np.uint8),  # Colors for the points (grayscale)
-            lambda color0, color1, steps: np.array([128] * steps, dtype=np.uint8),  # noqa: ARG005
+            np.array([[0], [255]], dtype=np.uint8),  # Colors for the points (2D grayscale)
+            lambda color0, color1, steps: np.array(128, dtype=np.uint8).repeat(steps),  # noqa: ARG005
+            np.array(
+                [
+                    [128, 0, 0, 0, 0],
+                    [0, 128, 0, 0, 0],
+                    [0, 0, 128, 0, 0],
+                    [0, 0, 0, 128, 0],
+                    [0, 0, 0, 0, 128],
+                ],
+                dtype=np.uint8,
+            ),
+        ),
+        # Test with grayscale image, grayscale 1D colors (2,)
+        (
+            np.zeros((5, 5), dtype=np.uint8),  # Grayscale image array
+            np.array([[0, 1]]),  # Edge from point 0 to point 1
+            np.array([[0, 0], [4, 4]]),  # Coordinates for the points
+            np.array([0, 255], dtype=np.uint8),  # Colors for the points (1D grayscale)
+            lambda color0, color1, steps: np.array(128, dtype=np.uint8).repeat(steps),  # noqa: ARG005
             np.array(
                 [
                     [128, 0, 0, 0, 0],
