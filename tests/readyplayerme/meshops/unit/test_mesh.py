@@ -105,7 +105,7 @@ def test_get_overlapping_vertices(
 
     assert len(grouped_vertices) == len(expected), "Number of groups doesn't match expected"
     for group, exp_group in zip(grouped_vertices, expected, strict=False):
-        assert np.array_equal(group, exp_group), f"Grouped vertices {group} do not match expected {exp_group}"
+        np.testing.assert_array_equal(group, exp_group, f"Grouped vertices {group} do not match expected {exp_group}")
 
 
 @pytest.mark.parametrize(
@@ -122,6 +122,15 @@ def test_get_overlapping_vertices_should_fail(indices):
     vertices = np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
     with pytest.raises(IndexError):
         mesh.get_overlapping_vertices(vertices, indices)
+
+
+def test_faces_to_edges(mock_mesh: mesh.Mesh):
+    """Test the faces_to_edges function returns the expected edges."""
+    edges = mesh.faces_to_edges(mock_mesh.faces)
+
+    np.testing.assert_array_equal(
+        edges, mock_mesh.edges, "The edges returned by faces_to_edges do not match the expected edges."
+    )
 
 
 @pytest.mark.parametrize(
@@ -156,7 +165,7 @@ def test_get_overlapping_vertices_should_fail(indices):
 def test_uv_to_image_coords(uvs: UVs, width: int, height: int, indices: Indices, expected: PixelCoord):
     """Test the uv_to_texture_space function returns the correct texture space coordinates."""
     image_space_coords = mesh.uv_to_image_coords(uvs, width, height, indices)
-    assert np.array_equal(image_space_coords, expected), "Image space coordinates do not match expected values."
+    np.testing.assert_array_equal(image_space_coords, expected, "Image space coordinates do not match expected values.")
 
 
 @pytest.mark.parametrize(

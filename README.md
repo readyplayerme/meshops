@@ -12,6 +12,12 @@ Position maps encode locations on the surface of a mesh as color values in an im
 Since 8-bit colors are positive values only and capped at 255, the linear transformation of the positions into the color space is lossy and not invertible, meaning that the original positions cannot be recovered from the color values.
 However, these maps can be utilized as control signals for various tasks such as texture synthesis and for shader effects.
 
+## Object Space Normal Maps
+
+Object space normal maps encode the surface normals of a mesh as color values in an image using the UV layout.
+Similar to position maps, the conversion from normals to colors is lossy.
+They also can be used as control signals for various tasks such as texture synthesis.
+
 ## UV Seams Transitioning
 
 UV seams are splits in a triangle mesh that, however, is supposed to represent a continuous surface across these splits.

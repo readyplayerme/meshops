@@ -8,7 +8,7 @@ import pytest
 
 from readyplayerme.meshops import draw
 from readyplayerme.meshops.mesh import Mesh
-from readyplayerme.meshops.types import Color, ColorMode, Edges, Image, PixelCoord
+from readyplayerme.meshops.types import Color, ColorMode, Edges, Faces, Image, PixelCoord, UVs
 
 
 @pytest.mark.parametrize(
@@ -704,6 +704,118 @@ def test_blend_uv_seams(mock_mesh: Mesh, image: Image, expected_output: Image):
     np.testing.assert_array_equal(output, expected_output)
 
 
+def test_blend_uv_seams_should_fail(mock_mesh: Mesh):
+    """Test the blend_uv_seams function fails when mesh has no UV coordinates."""
+    mock_mesh.uv_coords = None
+    image = np.zeros((8, 8), dtype=np.uint8)
+    with pytest.raises(ValueError, match="^(UV coordinates are invalid:).*"):
+        draw.blend_uv_seams(mock_mesh, image)
+
+
+@pytest.mark.parametrize(
+    "width, height, faces, uvs, attribute, padding, expected_output",
+    [
+        # Scalar value attribute.
+        (
+            4,
+            4,
+            np.array([[0, 1, 2]]),
+            np.array([[0, 0], [1, 0], [0, 1]]),
+            np.array([0.0, 0.5, 1.0]),
+            0,
+            np.array(
+                [[255, 0, 0, 0], [170, 212, 0, 0], [85, 127, 170, 0], [0, 42, 85, 128]],
+                dtype=np.uint8,
+            ),
+        ),
+        # RGB color attribute.
+        (
+            4,
+            4,
+            np.array([[0, 1, 2]]),
+            np.array([[0, 0], [1, 0], [0, 1]]),
+            np.array([[255, 0, 0], [0, 255, 0], [0, 0, 255]]),
+            0,
+            np.array(
+                [
+                    [[0, 0, 255], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                    [[85, 0, 170], [0, 85, 170], [0, 0, 0], [0, 0, 0]],
+                    [[170, 0, 85], [85, 85, 85], [0, 170, 85], [0, 0, 0]],
+                    [[255, 0, 0], [170, 85, 0], [85, 170, 0], [0, 255, 0]],
+                ],
+                dtype=np.uint8,
+            ),
+        ),
+        # RGBA float attribute.
+        (
+            4,
+            2,
+            np.array([[0, 1, 2]]),
+            np.array([[0, 0], [1, 0], [0, 1]]),
+            np.array([[-2.0, 0.0, 0.0, 0.5], [0.0, 1.0, 0.0, 0.5], [0.0, 0.0, 1.0, 0.5]]),
+            0,
+            np.array(
+                [
+                    [[255, 0, 255, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+                    [[0, 0, 0, 0], [85, 85, 0, 0], [255, 170, 85, 0], [255, 255, 0, 0]],
+                ],
+                dtype=np.uint8,
+            ),
+        ),
+    ],
+)
+def test_get_vertex_attribute_image(
+    width: int, height: int, faces: Faces, uvs: UVs, attribute: Color, padding: int, expected_output: Image
+):
+    """Test the get_vertex_attribute_image function with valid inputs."""
+    image = draw.get_vertex_attribute_image(width, height, faces, uvs, attribute, padding)
+    np.testing.assert_array_equal(image, expected_output)
+    assert image.shape[:2] == (
+        height,
+        width,
+    ), f"Image shape {image.shape} does not match expected shape {(height, width)}."
+    assert image.dtype == np.uint8, f"Image dtype {image.dtype} does not match expected data type uint8."
+
+
+@pytest.mark.parametrize(
+    "faces, uvs, attribute, error_message",
+    [
+        # No UVs.
+        (
+            np.array([[0, 1, 2]]),
+            None,
+            np.array([[255, 0, 0], [0, 255, 0], [0, 0, 255]]),
+            "^(UV coordinates are invalid:).*",
+        ),
+        # Mismatched UVs length.
+        (
+            np.array([[0, 1, 2]]),
+            np.array([[0, 0], [1, 0]]),
+            np.array([[255, 0, 0], [0, 255, 0], [0, 0, 255]]),
+            "^(UV coordinates are invalid: Too few UV coordinates.).*",
+        ),
+        # Mismatched attribute length.
+        (
+            np.array([[0, 1, 2]]),
+            np.array([[0, 0], [1, 0], [0, 1]]),
+            np.array([[255, 0, 0], [0, 255, 0]]),
+            "^(Attribute length does not match UV coordinates length:).*",
+        ),
+        # Unsupported color mode.
+        (
+            np.array([[0, 1, 2]]),
+            np.array([[0, 0], [1, 0], [0, 1]]),
+            np.array([[0, 1], [0, 1], [0, 1]]),
+            "^(Attribute shape is unsupported for image conversion).*",
+        ),
+    ],
+)
+def test_get_vertex_attribute_image_should_fail(faces: Faces, uvs: UVs, attribute: Color, error_message: str):
+    """Test the get_vertex_attribute_image function fails when provided data is incompatible."""
+    with pytest.raises(ValueError, match=error_message):
+        draw.get_vertex_attribute_image(8, 8, faces, uvs, attribute)
+
+
 @pytest.mark.parametrize(
     "mock_mesh, padding, expected_output",
     [
@@ -717,10 +829,10 @@ def test_blend_uv_seams(mock_mesh: Mesh, image: Image, expected_output: Image):
                     [
                         [0, 0, 0],
                         [51, 25, 0],
-                        [102, 50, 0],
+                        [102, 51, 0],
                         [153, 76, 0],
-                        [204, 101, 0],
-                        [255, 127, 0],
+                        [204, 102, 0],
+                        [255, 128, 0],
                         [0, 0, 0],
                         [0, 0, 0],
                     ],
@@ -741,7 +853,7 @@ def test_blend_uv_seams(mock_mesh: Mesh, image: Image, expected_output: Image):
                         [0, 255, 0],
                         [255, 255, 0],
                         [255, 191, 0],
-                        [255, 127, 0],
+                        [255, 128, 0],
                         [0, 0, 0],
                     ],
                     [
@@ -750,26 +862,26 @@ def test_blend_uv_seams(mock_mesh: Mesh, image: Image, expected_output: Image):
                         [0, 255, 255],
                         [127, 191, 255],
                         [255, 191, 127],
-                        [255, 127, 127],
+                        [255, 128, 127],
                         [0, 0, 0],
                         [0, 0, 0],
                     ],
                     [
                         [0, 0, 204],
                         [0, 127, 255],
-                        [127, 63, 255],
-                        [191, 95, 255],
-                        [255, 127, 255],
-                        [255, 63, 127],
+                        [127, 64, 255],
+                        [191, 96, 255],
+                        [255, 128, 255],
+                        [255, 64, 127],
                         [0, 0, 0],
                         [0, 0, 0],
                     ],
                     [
                         [0, 0, 255],
-                        [63, 31, 255],
-                        [127, 63, 255],
-                        [191, 63, 255],
-                        [255, 63, 255],
+                        [63, 32, 255],
+                        [127, 64, 255],
+                        [191, 64, 255],
+                        [255, 64, 255],
                         [0, 0, 0],
                         [0, 0, 0],
                         [0, 0, 0],
@@ -789,10 +901,10 @@ def test_blend_uv_seams(mock_mesh: Mesh, image: Image, expected_output: Image):
                     [
                         [0, 0, 0],
                         [51, 25, 0],
-                        [102, 50, 0],
+                        [102, 51, 0],
                         [153, 76, 0],
-                        [204, 101, 0],
-                        [255, 127, 0],
+                        [204, 102, 0],
+                        [255, 128, 0],
                         [0, 0, 0],
                         [0, 0, 0],
                     ],
@@ -813,7 +925,7 @@ def test_blend_uv_seams(mock_mesh: Mesh, image: Image, expected_output: Image):
                         [0, 255, 0],
                         [255, 255, 0],
                         [255, 191, 0],
-                        [255, 127, 0],
+                        [255, 128, 0],
                         [0, 0, 0],
                     ],
                     [
@@ -822,26 +934,26 @@ def test_blend_uv_seams(mock_mesh: Mesh, image: Image, expected_output: Image):
                         [0, 255, 255],
                         [127, 191, 255],
                         [255, 191, 127],
-                        [255, 127, 127],
+                        [255, 128, 127],
                         [0, 0, 0],
                         [0, 0, 0],
                     ],
                     [
                         [0, 0, 204],
                         [0, 127, 255],
-                        [127, 63, 255],
-                        [191, 95, 255],
-                        [255, 127, 255],
-                        [255, 63, 127],
+                        [127, 64, 255],
+                        [191, 96, 255],
+                        [255, 128, 255],
+                        [255, 64, 127],
                         [0, 0, 0],
                         [0, 0, 0],
                     ],
                     [
                         [0, 0, 255],
-                        [63, 31, 255],
-                        [127, 63, 255],
-                        [191, 63, 255],
-                        [255, 63, 255],
+                        [63, 32, 255],
+                        [127, 64, 255],
+                        [191, 64, 255],
+                        [255, 64, 255],
                         [0, 0, 0],
                         [0, 0, 0],
                         [0, 0, 0],
@@ -859,23 +971,23 @@ def test_blend_uv_seams(mock_mesh: Mesh, image: Image, expected_output: Image):
                 [
                     [
                         [51, 25, 0],
-                        [102, 50, 0],
+                        [102, 51, 0],
                         [153, 76, 0],
-                        [204, 101, 0],
-                        [255, 127, 0],
+                        [204, 102, 0],
+                        [255, 128, 0],
                         [255, 0, 0],
-                        [255, 127, 0],
-                        [255, 127, 0],
+                        [255, 128, 0],
+                        [255, 128, 0],
                     ],
                     [
                         [0, 0, 0],
                         [51, 25, 0],
-                        [102, 50, 0],
+                        [102, 51, 0],
                         [153, 76, 0],
-                        [204, 101, 0],
-                        [255, 127, 0],
+                        [204, 102, 0],
+                        [255, 128, 0],
                         [255, 191, 0],
-                        [255, 127, 0],
+                        [255, 128, 0],
                     ],
                     [
                         [0, 0, 51],
@@ -894,7 +1006,7 @@ def test_blend_uv_seams(mock_mesh: Mesh, image: Image, expected_output: Image):
                         [0, 255, 0],
                         [255, 255, 0],
                         [255, 191, 0],
-                        [255, 127, 0],
+                        [255, 128, 0],
                         [255, 191, 127],
                     ],
                     [
@@ -903,39 +1015,39 @@ def test_blend_uv_seams(mock_mesh: Mesh, image: Image, expected_output: Image):
                         [0, 255, 255],
                         [127, 191, 255],
                         [255, 191, 127],
-                        [255, 127, 127],
+                        [255, 128, 127],
                         [255, 255, 255],
                         [255, 191, 127],
                     ],
                     [
                         [0, 0, 204],
                         [0, 127, 255],
-                        [127, 63, 255],
-                        [191, 95, 255],
-                        [255, 127, 255],
-                        [255, 63, 127],
+                        [127, 64, 255],
+                        [191, 96, 255],
+                        [255, 128, 255],
+                        [255, 64, 127],
                         [255, 255, 255],
                         [255, 191, 127],
                     ],
                     [
                         [0, 0, 255],
-                        [63, 31, 255],
-                        [127, 63, 255],
-                        [191, 63, 255],
-                        [255, 63, 255],
+                        [63, 32, 255],
+                        [127, 64, 255],
+                        [191, 64, 255],
+                        [255, 64, 255],
                         [255, 191, 255],
                         [255, 191, 255],
-                        [255, 127, 127],
+                        [255, 128, 127],
                     ],
                     [
                         [63, 127, 255],
                         [127, 127, 255],
                         [191, 127, 255],
-                        [255, 127, 255],
+                        [255, 128, 255],
                         [255, 0, 255],
-                        [255, 127, 255],
-                        [255, 127, 255],
-                        [255, 63, 127],
+                        [255, 128, 255],
+                        [255, 128, 255],
+                        [255, 64, 127],
                     ],
                 ],
                 dtype=np.uint8,
@@ -949,3 +1061,264 @@ def test_get_position_map(mock_mesh: Mesh, padding: int, expected_output: Image)
     width = height = 8
     output = draw.get_position_map(width, height, mock_mesh, padding=padding)
     np.testing.assert_array_equal(output, expected_output)
+
+
+def test_get_position_map_should_fail(mock_mesh: Mesh):
+    """Test the get_position_map function fails when mesh has no UV coordinates."""
+    mock_mesh.uv_coords = None
+    width = height = 8
+    with pytest.raises(ValueError, match="^(UV coordinates are invalid:).*"):
+        draw.get_position_map(width, height, mock_mesh)
+
+
+@pytest.mark.parametrize(
+    "mock_mesh, padding, expected_output",
+    [
+        # No Padding
+        (
+            "mock_mesh",
+            0,
+            np.array(
+                [
+                    [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [106, 0, 0], [0, 0, 0], [0, 0, 0]],
+                    [[0, 0, 41], [21, 0, 32], [42, 0, 24], [63, 0, 16], [84, 0, 8], [106, 0, 0], [0, 0, 0], [0, 0, 0]],
+                    [
+                        [0, 0, 80],
+                        [6, 85, 101],
+                        [12, 170, 53],
+                        [37, 148, 41],
+                        [62, 127, 29],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                    ],
+                    [
+                        [0, 0, 120],
+                        [12, 170, 161],
+                        [15, 212, 110],
+                        [19, 255, 59],
+                        [192, 255, 59],
+                        [223, 127, 99],
+                        [255, 0, 140],
+                        [0, 0, 0],
+                    ],
+                    [
+                        [0, 0, 160],
+                        [9, 127, 190],
+                        [19, 255, 221],
+                        [115, 127, 230],
+                        [201, 127, 149],
+                        [233, 0, 190],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                    ],
+                    [
+                        [0, 0, 200],
+                        [9, 127, 230],
+                        [105, 0, 240],
+                        [158, 0, 240],
+                        [211, 0, 240],
+                        [223, 0, 197],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                    ],
+                    [
+                        [0, 0, 240],
+                        [52, 0, 240],
+                        [105, 0, 240],
+                        [153, 0, 243],
+                        [201, 0, 247],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                    ],
+                    [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [192, 0, 255], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                ],
+                dtype=np.uint8,
+            ),
+        ),
+        # Negative Padding
+        (
+            "mock_mesh",
+            -4,
+            np.array(
+                [
+                    [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [106, 0, 0], [0, 0, 0], [0, 0, 0]],
+                    [[0, 0, 41], [21, 0, 32], [42, 0, 24], [63, 0, 16], [84, 0, 8], [106, 0, 0], [0, 0, 0], [0, 0, 0]],
+                    [
+                        [0, 0, 80],
+                        [6, 85, 101],
+                        [12, 170, 53],
+                        [37, 148, 41],
+                        [62, 127, 29],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                    ],
+                    [
+                        [0, 0, 120],
+                        [12, 170, 161],
+                        [15, 212, 110],
+                        [19, 255, 59],
+                        [192, 255, 59],
+                        [223, 127, 99],
+                        [255, 0, 140],
+                        [0, 0, 0],
+                    ],
+                    [
+                        [0, 0, 160],
+                        [9, 127, 190],
+                        [19, 255, 221],
+                        [115, 127, 230],
+                        [201, 127, 149],
+                        [233, 0, 190],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                    ],
+                    [
+                        [0, 0, 200],
+                        [9, 127, 230],
+                        [105, 0, 240],
+                        [158, 0, 240],
+                        [211, 0, 240],
+                        [223, 0, 197],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                    ],
+                    [
+                        [0, 0, 240],
+                        [52, 0, 240],
+                        [105, 0, 240],
+                        [153, 0, 243],
+                        [201, 0, 247],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                    ],
+                    [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [192, 0, 255], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                ],
+                dtype=np.uint8,
+            ),
+        ),
+        # Positive Padding
+        (
+            "mock_mesh",
+            4,
+            np.array(
+                [
+                    [
+                        [21, 0, 41],
+                        [42, 0, 41],
+                        [63, 0, 41],
+                        [84, 0, 32],
+                        [106, 0, 24],
+                        [106, 0, 0],
+                        [106, 0, 8],
+                        [106, 0, 0],
+                    ],
+                    [
+                        [0, 0, 41],
+                        [21, 0, 32],
+                        [42, 0, 24],
+                        [63, 0, 16],
+                        [84, 0, 8],
+                        [106, 0, 0],
+                        [106, 127, 29],
+                        [106, 0, 0],
+                    ],
+                    [
+                        [0, 0, 80],
+                        [6, 85, 101],
+                        [12, 170, 53],
+                        [37, 148, 41],
+                        [62, 127, 29],
+                        [255, 255, 140],
+                        [255, 255, 140],
+                        [255, 127, 140],
+                    ],
+                    [
+                        [0, 0, 120],
+                        [12, 170, 161],
+                        [15, 212, 110],
+                        [19, 255, 59],
+                        [192, 255, 59],
+                        [223, 127, 99],
+                        [255, 0, 140],
+                        [255, 127, 190],
+                    ],
+                    [
+                        [0, 0, 160],
+                        [9, 127, 190],
+                        [19, 255, 221],
+                        [115, 127, 230],
+                        [201, 127, 149],
+                        [233, 0, 190],
+                        [255, 255, 240],
+                        [255, 127, 197],
+                    ],
+                    [
+                        [0, 0, 200],
+                        [9, 127, 230],
+                        [105, 0, 240],
+                        [158, 0, 240],
+                        [211, 0, 240],
+                        [223, 0, 197],
+                        [255, 255, 247],
+                        [255, 127, 197],
+                    ],
+                    [
+                        [0, 0, 240],
+                        [52, 0, 240],
+                        [105, 0, 240],
+                        [153, 0, 243],
+                        [201, 0, 247],
+                        [233, 127, 255],
+                        [233, 127, 255],
+                        [233, 0, 197],
+                    ],
+                    [
+                        [52, 127, 240],
+                        [105, 127, 240],
+                        [158, 127, 243],
+                        [211, 127, 255],
+                        [192, 0, 255],
+                        [223, 0, 255],
+                        [223, 0, 255],
+                        [223, 0, 197],
+                    ],
+                ],
+                dtype=np.uint8,
+            ),
+        ),
+    ],
+    indirect=["mock_mesh"],
+)
+def test_get_obj_space_normal_map(mock_mesh: Mesh, padding: int, expected_output: Image):
+    """Test the get_obj_space_normal_map function with valid inputs."""
+    width = height = 8
+    output = draw.get_obj_space_normal_map(width, height, mock_mesh, padding=padding)
+    np.testing.assert_array_equal(output, expected_output)
+
+
+@pytest.mark.parametrize(
+    "mock_mesh, missing, error_pattern",
+    [
+        (
+            "mock_mesh",
+            "uv_coords",
+            "^(UV coordinates are invalid:).*",
+        ),
+        (
+            "mock_mesh",
+            "normals",
+            "Mesh does not have vertex normals.",
+        ),
+    ],
+    indirect=["mock_mesh"],
+)
+def test_get_obj_space_normal_map_should_fail(mock_mesh: Mesh, missing: str, error_pattern: str):
+    """Test the get_obj_space_normal_map function fails when mesh has no vertex normals."""
+    setattr(mock_mesh, missing, None)
+    width = height = 8
+    with pytest.raises(ValueError, match=error_pattern):
+        draw.get_obj_space_normal_map(width, height, mock_mesh)

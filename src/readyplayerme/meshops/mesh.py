@@ -8,7 +8,7 @@ import trimesh
 from scipy.spatial import cKDTree
 
 from readyplayerme.meshops.material import Material
-from readyplayerme.meshops.types import Edges, Faces, IndexGroups, Indices, PixelCoord, UVs, Vertices
+from readyplayerme.meshops.types import Edges, Faces, IndexGroups, Indices, Normals, PixelCoord, UVs, Vertices
 
 
 @dataclass()
@@ -22,6 +22,7 @@ class Mesh:
     edges: Edges
     faces: Faces
     uv_coords: UVs | None = None
+    normals: Normals | None = None
     material: Material | None = None
 
 
@@ -63,15 +64,17 @@ def read_gltf(filename: str | Path) -> Mesh:
             uvs = loaded.visual.to_texture().uv  # Sets the shape of UVs, but values are all 0.5.
         else:
             uvs = None
+    normals = loaded.vertex_normals
     try:
         material = Material.from_trimesh_material(loaded.visual.material)
     except AttributeError:
         material = None
     return Mesh(
         vertices=np.array(loaded.vertices),
-        uv_coords=uvs,
         faces=np.array(loaded.faces),
         edges=loaded.edges,
+        uv_coords=uvs,
+        normals=normals,
         material=material,
     )
 
@@ -132,6 +135,16 @@ def get_overlapping_vertices(
             processed.update(neighbors)
 
     return grouped_indices
+
+
+def faces_to_edges(faces: Faces) -> Edges:
+    """Return edges of the faces.
+
+    :param faces: Faces to convert to edge representation.
+    :return: Edges contained in the faces.
+    """
+    # Split faces into first 2 columns, last 2 columns and first + last column.
+    return np.hstack((faces[:, :2], faces[:, 1:], np.roll(faces, 1, axis=1)[:, :2])).reshape(faces.size, 2)
 
 
 def uv_to_image_coords(
