@@ -1,4 +1,5 @@
 """Functions to handle mesh data and read it from file."""
+
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path

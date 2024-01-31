@@ -1,4 +1,5 @@
 """Unit tests for the mesh module."""
+
 import types
 from collections.abc import Callable
 from pathlib import Path

@@ -1,4 +1,5 @@
 """Functions to deal with colors and color modes."""
+
 import numpy as np
 
 from readyplayerme.meshops.types import Color, ColorMode, Image, IndexGroups

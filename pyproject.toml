@@ -41,9 +41,9 @@ test = [
   "pyinstrument",
 ]
 lint = [
-  "black>=23.3.0",
+  "black>=24.1.1",
   "mypy>=1.5.1",
-  "ruff>=0.0.285",
+  "ruff>=0.1.15",
 ]
 dev = [
   "readyplayerme.meshops[test, lint]",
@@ -73,7 +73,7 @@ post-install-commands = [
 ]
 
 [tool.hatch.envs.default.scripts]
-install-precommit = "pre-commit install -t pre-commit -t commit-msg -t pre-push"
+install-precommit = "pre-commit install --overwrite -t pre-commit -t commit-msg -t pre-push"
 test = "pytest {args:tests}"
 test-cov = "coverage run -m pytest {args:tests}"
 cov-report = [
@@ -124,7 +124,7 @@ python = ["3.10", "3.11"]
 #addopts="-n auto"
 
 [tool.black]
-target-versions = ["py310", "py311"]
+target-version = ["py310", "py311"]
 line-length = 120
 skip-string-normalization = false
 

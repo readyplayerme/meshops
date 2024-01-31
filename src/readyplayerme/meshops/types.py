@@ -1,4 +1,5 @@
 """Custom types for meshops."""
+
 from enum import Enum
 from typing import TypeAlias
 

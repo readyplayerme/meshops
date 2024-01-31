@@ -1,4 +1,5 @@
 """Module for dealing with image manipulation."""
+
 from collections.abc import Callable
 
 import numpy as np
