@@ -9,6 +9,7 @@ from scipy.ndimage import gaussian_filter, maximum_filter
 
 from readyplayerme.meshops import mesh as mops
 from readyplayerme.meshops.draw.color import (
+    attribute_to_color,
     blend_colors,
     get_color_array_color_mode,
     get_image_color_mode,
@@ -32,7 +33,7 @@ def create_nan_image(width: int, height: int, mode: ColorMode = ColorMode.RGB) -
             msg = "Width and height must be positive integers"
             raise ValueError(msg)
 
-        shape = (height, width) if mode == ColorMode.GRAYSCALE else (height, width, mode.value)
+        shape = tuple(filter(bool, (height, width, mode.value)))
         return np.full(shape, np.nan, dtype=np.float32)
     except ValueError as error:
         msg = "Failed to create NaN image"
@@ -322,6 +323,8 @@ def get_vertex_attribute_image(
     uvs: mops.UVs,
     attribute: Color,
     padding: int = 4,
+    *,
+    normalize_per_channel: bool = True,
 ) -> Image:
     """Turn a vertex attribute into an image using a uv layout.
 
@@ -332,6 +335,8 @@ def get_vertex_attribute_image(
     :param faces: The faces of the mesh containing vertex indices.
     :param uvs: The UV coordinates for the vertices of the faces.
     :param padding: Padding in pixels to add around the UV shells. Default 4.
+    :param normalize_per_channel: Whether to normalize each channel separately or across all channels.
+    Only if the attribute is not already uint8. Default True.
     :return: The vertex attribute as an 8-bit image.
     """
     # Sanity checks.
@@ -347,19 +352,11 @@ def get_vertex_attribute_image(
         msg = f"Attribute length does not match UV coordinates length: {len(attribute)} != {num_uvs}."
         raise ValueError(msg)
     try:
-        attr_color_mode = get_color_array_color_mode(attribute)
+        colors = attribute_to_color(attribute, normalize_per_channel=normalize_per_channel)
+        attr_color_mode = get_color_array_color_mode(colors)
     except ValueError as error:
         msg = f"Attribute shape is unsupported for image conversion: {attribute.shape}"
         raise ValueError(msg) from error
-
-    if attribute.dtype != np.uint8:
-        # Map the normalized attribute to the 8-bit color format.
-        colors = np.nan_to_num(
-            (attribute - attribute.min(axis=0, keepdims=True)) / np.ptp(attribute, axis=0, keepdims=True)
-        )  # Fixme per channel opt, extract to function
-        colors = skimage.util.img_as_ubyte(colors)
-    else:
-        colors = attribute
 
     # Create an image from the attribute.
     image_coords = mops.uv_to_image_coords(uvs, width, height)
@@ -370,7 +367,7 @@ def get_vertex_attribute_image(
     triangle_coords = mops.get_faces_image_coords(faces, uvs, width, height)
     mask = create_mask(width, height, triangle_coords).astype(bool)
     if attr_color_mode in (ColorMode.RGB, ColorMode.RGBA):
-        mask = mask[:, :, np.newaxis].repeat(attr_color_mode.value, axis=2)
+        mask = mask[:, :, np.newaxis].repeat(attr_color_mode, axis=2)
     attribute_img *= mask
     # Add padding around the UV shells.
     if padding > 0:

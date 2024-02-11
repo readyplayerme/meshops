@@ -1,6 +1,6 @@
 """Custom types for meshops."""
 
-from enum import Enum
+from enum import IntEnum
 from typing import TypeAlias
 
 import numpy as np
@@ -16,7 +16,7 @@ IndexGroups: TypeAlias = list[npt.NDArray[np.uint32]]
 Color: TypeAlias = npt.NDArray[np.uint8]  # Shape RGBA: (c, 4) | RGB: (c, 3) | Grayscale: (c,)
 
 
-class ColorMode(Enum):
+class ColorMode(IntEnum):
     """Color modes for images."""
 
     GRAYSCALE = 0

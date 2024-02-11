@@ -1,6 +1,10 @@
 """Functions to deal with colors and color modes."""
 
+from typing import Any
+
 import numpy as np
+import numpy.typing as npt
+import skimage
 
 from readyplayerme.meshops.types import Color, ColorMode, Image, IndexGroups
 
@@ -118,3 +122,37 @@ def interpolate_values(start: Color, end: Color, num_steps: int) -> Color:
         return start + t * (end - start)
     else:
         return start[None, :] + t[:, None] * (end - start)
+
+
+def attribute_to_color(attribute: npt.NDArray[Any], *, normalize_per_channel: bool = True) -> Color:
+    """Convert an attribute to color values.
+
+    If necessary, normalize it and convert it to uint8.
+
+    :param attribute: The attribute to turn into color values.
+    :param normalize_per_channel: Whether to normalize each channel separately or across all channels.
+    Only if the attribute is not already uint8.
+    :return: The attribute as uint8 color values.
+    """
+    if attribute.ndim == 0:
+        msg = "Attribute has 0 dimensions. Must at least be a scalar (1 dimension)."
+        raise ValueError(msg)
+    if attribute.size > 1:  # Do not squeeze a scalar, as it will get 0 dimensions.
+        attribute = np.squeeze(attribute)
+    # If the attribute has 2 values, like UV coordinates, add a third value to make it RGB.
+    dim2 = 2
+    if attribute.ndim == dim2 and attribute.shape[1] == dim2:
+        attribute = np.pad(attribute, ((0, 0), (0, 1)), mode="constant", constant_values=0)
+    # A color should not have more than 4 channels, but we don't enforce it here.
+    # Normalize the attribute.
+    if attribute.dtype != np.uint8:
+        axis = 0 if normalize_per_channel else None
+        colors = np.nan_to_num(
+            (attribute - attribute.min(axis=axis, keepdims=True))
+            / (np.ptp(attribute, axis=axis, keepdims=True) + 1e-7)  # Small constant to avoid division by zero.
+        )
+        colors = skimage.util.img_as_ubyte(colors)
+    else:
+        colors = attribute
+
+    return colors
