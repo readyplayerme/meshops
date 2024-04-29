@@ -18,6 +18,7 @@ class TestReadMesh:
     @pytest.mark.parametrize(
         "filepath, expected",
         [("test.glb", mesh.read_gltf), (Path("test.glb"), mesh.read_gltf), ("test.gltf", mesh.read_gltf)],
+        ids=["str .glb", "Path .glb", "str .gltf"],
     )
     def test_get_mesh_reader_glb(self, filepath: str | Path, expected: Callable[[str | Path], mesh.Mesh]):
         """Test the get_mesh_reader function with a .glb file path."""
@@ -25,7 +26,11 @@ class TestReadMesh:
         assert callable(reader), "The mesh reader should be a callable function."
         assert reader == expected, "The reader function for .glTF files should be read_gltf."
 
-    @pytest.mark.parametrize("filepath", ["test", "test.obj", Path("test.stl"), "test.fbx", "test.abc", "test.ply"])
+    @pytest.mark.parametrize(
+        "filepath",
+        ["test", "test.obj", Path("test.stl"), "test.fbx", "test.abc", "test.ply"],
+        ids=["no extension", ".obj", ".stl", ".fbx", ".abc", ".ply"],
+    )
     def test_get_mesh_reader_should_fail(self, filepath: str | Path):
         """Test the get_mesh_reader function with an unsupported file format."""
         with pytest.raises(NotImplementedError):
@@ -93,6 +98,12 @@ def test_get_boundary_vertices(mock_mesh: mesh.Mesh):
         # Overlapping vertices, but empty indices given.
         (np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]), np.array([], dtype=np.int32), 0.1, []),
     ],
+    ids=[
+        "mock_mesh",
+        "close positions with imprecision",
+        "overlapping vertices, None indices",
+        "overlapping vertices, empty indices",
+    ],
 )
 def test_get_overlapping_vertices(
     vertices: Vertices, indices: Indices, precision: float, expected: IndexGroups, request: pytest.FixtureRequest
@@ -117,6 +128,7 @@ def test_get_overlapping_vertices(
         # Case with index out of bounds (negative index)
         np.array([0, -1], dtype=np.int32),  # Using int32 to allow negative values
     ],
+    ids=["index out of bounds (>max)", "index out of bounds (<min)"],
 )
 def test_get_overlapping_vertices_should_fail(indices):
     """Test that get_overlapping_vertices function raises an exception for out of bounds indices."""
@@ -162,6 +174,17 @@ def test_faces_to_edges(mock_mesh: mesh.Mesh):
         # 0 px image
         (np.array([[0.5, 0.5], [0.25, 0.75]]), 0, 0, np.array([0]), np.array([[0, 0]])),
     ],
+    ids=[
+        "simple UV conversion",
+        "full range UV conversion",
+        "near 0 and 1 values",
+        "empty indices",
+        "out of range UV",
+        "wrapped UV",
+        "non square UV",
+        "1px image",
+        "0px image",
+    ],
 )
 def test_uv_to_image_coords(uvs: UVs, width: int, height: int, indices: Indices, expected: PixelCoord):
     """Test the uv_to_texture_space function returns the correct texture space coordinates."""
@@ -172,10 +195,12 @@ def test_uv_to_image_coords(uvs: UVs, width: int, height: int, indices: Indices,
 @pytest.mark.parametrize(
     "uvs, width, height, indices",
     [
+        # Too many indices
         (np.array([[0.5, 0.5], [0.25, 0.75]]), 100, 100, np.array([0, 1, 2])),
         # No UV coord
         (np.array([]), 1, 1, np.array([0, 1, 2])),
     ],
+    ids=["too many indices", "no UV coord"],
 )
 def test_uv_to_image_coords_should_fail(uvs: UVs, width: int, height: int, indices: Indices):
     """Test the uv_to_image_space function raises expected exceptions."""
@@ -217,6 +242,7 @@ def test_get_faces_image_coords(mock_mesh):
         # No faces
         (np.array([[]]), np.array([[0.5, 0.5], [0.25, 0.75], [0.0, 0.0]]), 1, 1),
     ],
+    ids=["too few UV coords", "no UV coords", "no faces"],
 )
 def test_get_faces_image_coords_should_fail(faces: Faces, uvs: UVs, width: int, height: int):
     """Test the get_faces_image_coords function raises expected exceptions."""
