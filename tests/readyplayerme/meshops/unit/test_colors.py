@@ -54,9 +54,9 @@ def test_get_image_color_mode_should_fail(image):
     ],
     ids=["Grayscale 1D", "Grayscale 2D", "RGB", "RGBA"],
 )
-def test_get_color_array_color_mode(color_array, expected_mode):
-    """Test the get_color_array_color_mode function with valid inputs."""
-    assert draw.get_color_array_color_mode(color_array) == expected_mode
+def test_get_color_mode(color_array, expected_mode):
+    """Test the get_color_mode function with valid inputs."""
+    assert draw.get_color_mode(color_array) == expected_mode
 
 
 @pytest.mark.parametrize(
@@ -71,10 +71,10 @@ def test_get_color_array_color_mode(color_array, expected_mode):
     ],
     ids=["Invalid channel count", "3D array", "0-dimensional array"],
 )
-def test_get_color_array_color_mode_should_fail(color_array):
-    """Test the get_color_array_color_mode function with invalid inputs."""
+def test_get_color_mode_should_fail(color_array):
+    """Test the get_color_mode function with invalid inputs."""
     with pytest.raises(ValueError):
-        draw.get_color_array_color_mode(color_array)
+        draw.get_color_mode(color_array)
 
 
 @pytest.mark.parametrize(

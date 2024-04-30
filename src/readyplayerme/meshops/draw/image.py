@@ -11,7 +11,7 @@ from readyplayerme.meshops import mesh as mops
 from readyplayerme.meshops.draw.color import (
     attribute_to_color,
     blend_colors,
-    get_color_array_color_mode,
+    get_color_mode,
     get_image_color_mode,
     interpolate_values,
 )
@@ -180,7 +180,7 @@ def draw_lines(
     :param interpolate_func: Function to interpolate colors.
     :return: Image with interpolated lines.
     """
-    if get_color_array_color_mode(colors) == ColorMode.GRAYSCALE:
+    if get_color_mode(colors) == ColorMode.GRAYSCALE:
         colors = colors[:, np.newaxis]
     for edge in edges:
         try:
@@ -247,7 +247,7 @@ def rasterize(
 
     # Check if the image and colors are compatible (both grayscale or both color)
     image_mode = get_image_color_mode(image)
-    colors_mode = get_color_array_color_mode(colors)
+    colors_mode = get_color_mode(colors)
     if image_mode != colors_mode:
         msg = "Color mode of 'image' and 'colors' must match (both grayscale or both color)."
         raise ValueError(msg)
@@ -353,7 +353,7 @@ def get_vertex_attribute_image(
         raise ValueError(msg)
     try:
         colors = attribute_to_color(attribute, normalize_per_channel=normalize_per_channel)
-        attr_color_mode = get_color_array_color_mode(colors)
+        attr_color_mode = get_color_mode(colors)
     except ValueError as error:
         msg = f"Attribute shape is unsupported for image conversion: {attribute.shape}"
         raise ValueError(msg) from error
