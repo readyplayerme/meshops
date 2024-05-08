@@ -1,5 +1,6 @@
 """Custom types for meshops."""
-from enum import Enum
+
+from enum import IntEnum
 from typing import TypeAlias
 
 import numpy as np
@@ -8,13 +9,14 @@ import numpy.typing as npt
 # trimesh uses int64 and float64 for its arrays.
 Indices: TypeAlias = npt.NDArray[np.uint32] | npt.NDArray[np.uint64]  # Shape (i,)
 Vertices: TypeAlias = npt.NDArray[np.float32] | npt.NDArray[np.float64]  # Shape (v, 3)
+Normals: TypeAlias = npt.NDArray[np.float64]  # Shape (n, 3)
 Edges: TypeAlias = npt.NDArray[np.int32] | npt.NDArray[np.int64]  # Shape (e, 2)
 Faces: TypeAlias = npt.NDArray[np.int32] | npt.NDArray[np.int64]  # Shape (f, 3)
 IndexGroups: TypeAlias = list[npt.NDArray[np.uint32]]
 Color: TypeAlias = npt.NDArray[np.uint8]  # Shape RGBA: (c, 4) | RGB: (c, 3) | Grayscale: (c,)
 
 
-class ColorMode(Enum):
+class ColorMode(IntEnum):
     """Color modes for images."""
 
     GRAYSCALE = 0

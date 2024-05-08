@@ -1,4 +1,5 @@
 """Pytest fixtures for meshops unit tests."""
+
 import numpy as np
 import pytest
 
@@ -98,7 +99,22 @@ def mock_mesh():
             [0.869261205, 0.525972605],
         ]
     )
-    return Mesh(vertices=vertices, edges=edges, faces=faces, uv_coords=uv)
+    normals = np.array(
+        [
+            [-0.70710678, 0.0, 0.70710678],
+            [-0.57735027, 0.57735027, 0.57735027],
+            [-0.70710678, 0.0, -0.70710678],
+            [-0.57735027, 0.57735027, -0.57735027],
+            [0.57611046, 0.0, 0.81737185],
+            [0.57735027, 0.57735027, 0.57735027],
+            [0.0, 0.0, -1.0],
+            [0.57735027, 0.57735027, -0.57735027],
+            [0.70710678, 0.0, 0.70710678],
+            [0.0, 0.0, -1.0],
+            [1.0, 0.0, 0.0],
+        ]
+    )
+    return Mesh(vertices=vertices, edges=edges, faces=faces, uv_coords=uv, normals=normals)
 
 
 @pytest.fixture

@@ -1,5 +1,10 @@
 """Functions to deal with colors and color modes."""
+
+from typing import Any
+
 import numpy as np
+import numpy.typing as npt
+import skimage
 
 from readyplayerme.meshops.types import Color, ColorMode, Image, IndexGroups
 
@@ -33,19 +38,19 @@ def get_image_color_mode(image: Image) -> ColorMode:
             raise ValueError(error_msg)
 
 
-def get_color_array_color_mode(color_array: Color) -> ColorMode:
+def get_color_mode(color: Color) -> ColorMode:
     """
     Determine the color mode of a color array.
 
-    :param color_array: An array representing colors.
+    :param color: An array representing colors.
     :return ColorMode: Enum indicating the color mode of the color array (GRAYSCALE, RGB, or RGBA).
     """
     try:
-        n_channels = color_array.shape[-1]
+        n_channels = color.shape[-1]
     except IndexError as error:
         error_msg = "Color has invalid shape: zero dimensions."
         raise ValueError(error_msg) from error
-    match color_array.ndim, n_channels:
+    match color.ndim, n_channels:
         case 1, _:
             return ColorMode.GRAYSCALE
         case 2, 1:
@@ -117,3 +122,48 @@ def interpolate_values(start: Color, end: Color, num_steps: int) -> Color:
         return start + t * (end - start)
     else:
         return start[None, :] + t[:, None] * (end - start)
+
+
+def attribute_to_color(attribute: npt.NDArray[Any], *, normalize_per_channel: bool = False) -> Color:
+    """Convert an attribute to color values.
+
+    If necessary, remap to [0, 255] range as uint8.
+
+    :param attribute: The attribute to turn into color values.
+    :param normalize_per_channel: Whether to remap each channel separately or across all channels.
+    Only if the attribute is not already uint8.
+    :return: The attribute as uint8 color values.
+    """
+    attribute = np.nan_to_num(attribute)
+    if attribute.ndim == 0:
+        msg = "Attribute has 0 dimensions. Must at least be a scalar (1 dimension)."
+        raise ValueError(msg)
+    if attribute.size > 1:  # Do not squeeze a scalar, as it will get 0 dimensions.
+        attribute = np.squeeze(attribute)
+    # If the attribute has 2 values, like UV coordinates, add a third value to make it RGB.
+    dims_2d = 2
+    if attribute.ndim == dims_2d and attribute.shape[1] == dims_2d:
+        attribute = np.pad(attribute, ((0, 0), (0, 1)), mode="constant", constant_values=0)
+    # Now check if we're actually dealing with colors.
+    try:
+        _ = get_color_mode(attribute)
+    except ValueError:
+        raise
+    # Normalize the attribute.
+    if attribute.dtype != np.uint8:
+        axis = 0 if normalize_per_channel else None
+        # If the attribute range is below 1, keep 1 as the maximum. Also avoids division by 0.
+        attribute_range = np.maximum(np.absolute(attribute).max(axis=axis, keepdims=True), 1)
+        colors = attribute / attribute_range
+        # If the minimum is less than 0, shift the array into the [0, 1] range.
+        column_mask = colors.min(axis=axis) < 0
+        if column_mask.any():
+            if axis is None:
+                colors = (colors + 1) * 0.5
+            elif axis == 0:
+                colors[:, column_mask] = (colors[:, column_mask] + 1) * 0.5
+        colors = skimage.util.img_as_ubyte(colors)
+    else:
+        colors = attribute
+
+    return colors

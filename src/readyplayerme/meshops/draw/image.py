@@ -1,4 +1,5 @@
 """Module for dealing with image manipulation."""
+
 from collections.abc import Callable
 
 import numpy as np
@@ -8,8 +9,9 @@ from scipy.ndimage import gaussian_filter, maximum_filter
 
 from readyplayerme.meshops import mesh as mops
 from readyplayerme.meshops.draw.color import (
+    attribute_to_color,
     blend_colors,
-    get_color_array_color_mode,
+    get_color_mode,
     get_image_color_mode,
     interpolate_values,
 )
@@ -31,7 +33,7 @@ def create_nan_image(width: int, height: int, mode: ColorMode = ColorMode.RGB) -
             msg = "Width and height must be positive integers"
             raise ValueError(msg)
 
-        shape = (height, width) if mode == ColorMode.GRAYSCALE else (height, width, mode.value)
+        shape = tuple(filter(bool, (height, width, mode.value)))
         return np.full(shape, np.nan, dtype=np.float32)
     except ValueError as error:
         msg = "Failed to create NaN image"
@@ -178,7 +180,7 @@ def draw_lines(
     :param interpolate_func: Function to interpolate colors.
     :return: Image with interpolated lines.
     """
-    if get_color_array_color_mode(colors) == ColorMode.GRAYSCALE:
+    if get_color_mode(colors) == ColorMode.GRAYSCALE:
         colors = colors[:, np.newaxis]
     for edge in edges:
         try:
@@ -245,7 +247,7 @@ def rasterize(
 
     # Check if the image and colors are compatible (both grayscale or both color)
     image_mode = get_image_color_mode(image)
-    colors_mode = get_color_array_color_mode(colors)
+    colors_mode = get_color_mode(colors)
     if image_mode != colors_mode:
         msg = "Color mode of 'image' and 'colors' must match (both grayscale or both color)."
         raise ValueError(msg)
@@ -286,7 +288,11 @@ def blend_uv_seams(mesh: mops.Mesh, image: Image) -> Image:
     boundary_vertices = mops.get_boundary_vertices(mesh.edges)
     seam_vertices = mops.get_overlapping_vertices(mesh.vertices, boundary_vertices)
     # Sample colors from all UV coordinates and blend only colors of overlapping vertices.
-    pixel_coords = mops.uv_to_image_coords(mesh.uv_coords, image.shape[0], image.shape[1])
+    try:
+        pixel_coords = mops.uv_to_image_coords(mesh.uv_coords, image.shape[0], image.shape[1])
+    except TypeError as error:
+        msg = f"UV coordinates are invalid: {mesh.uv_coords}"
+        raise ValueError(msg) from error
     vertex_colors = image[pixel_coords[:, 1], pixel_coords[:, 0]]
     mixed_colors = blend_colors(vertex_colors, seam_vertices)
 
@@ -310,7 +316,71 @@ def blend_uv_seams(mesh: mops.Mesh, image: Image) -> Image:
     return blend_images(image, raster_image, blurred_mask).astype(np.uint8)
 
 
-def get_position_map(width: int, height: int, mesh: mops.Mesh, padding: int = 4) -> Image:
+def get_vertex_attribute_image(
+    width: int,
+    height: int,
+    faces: mops.Faces,
+    uvs: mops.UVs,
+    attribute: Color,
+    padding: int = 4,
+    *,
+    normalize_per_channel: bool = False,
+) -> Image:
+    """Turn a vertex attribute into an image using a uv layout.
+
+    If the attribute is not already a uint8, it's normalized and then mapped to the 8-bit range [0, 255].
+
+    :param width: Width of the image in pixels.
+    :param height: Height of the image in pixels.
+    :param faces: The faces of the mesh containing vertex indices.
+    :param uvs: The UV coordinates for the vertices of the faces.
+    :param attribute: The attribute to convert to an image.
+    :param padding: Padding in pixels to add around the UV shells. Default 4.
+    :param normalize_per_channel: Whether to normalize each channel separately or across all channels.
+    Only if the attribute is not already uint8. Default False.
+    :return: The vertex attribute as an 8-bit image.
+    """
+    # Sanity checks.
+    try:
+        num_uvs = len(uvs)
+    except TypeError as error:
+        msg = f"UV coordinates are invalid: {uvs}."
+        raise ValueError(msg) from error
+    if (num_vertices := faces.ravel().max() + 1) > num_uvs:
+        msg = f"UV coordinates are invalid: Too few UV coordinates. Expected {num_vertices}, got {num_uvs}."
+        raise ValueError(msg)
+    if len(attribute) != num_uvs:
+        msg = f"Attribute length does not match UV coordinates length: {len(attribute)} != {num_uvs}."
+        raise ValueError(msg)
+    try:
+        colors = attribute_to_color(attribute, normalize_per_channel=normalize_per_channel)
+        attr_color_mode = get_color_mode(colors)
+    except ValueError as error:
+        msg = f"Attribute shape is unsupported for image conversion: {attribute.shape}"
+        raise ValueError(msg) from error
+
+    # Create an image from the attribute.
+    image_coords = mops.uv_to_image_coords(uvs, width, height)
+    attribute_img = create_nan_image(width, height, attr_color_mode)
+    edges = mops.faces_to_edges(faces)
+    attribute_img = rasterize(attribute_img, edges, image_coords, colors, inplace=True)
+    # Constrain colored pixels to the UV shells.
+    triangle_coords = mops.get_faces_image_coords(faces, uvs, width, height)
+    mask = create_mask(width, height, triangle_coords).astype(bool)
+    if attr_color_mode in (ColorMode.RGB, ColorMode.RGBA):
+        mask = mask[:, :, np.newaxis].repeat(attr_color_mode, axis=2)
+    attribute_img *= mask
+    # Add padding around the UV shells.
+    if padding > 0:
+        padded = maximum_filter(attribute_img, size=padding, axes=[0, 1])
+        attribute_img[~mask] = padded[~mask]
+
+    return attribute_img.astype(np.uint8)
+
+
+def get_position_map(
+    width: int, height: int, mesh: mops.Mesh, padding: int = 4, *, center: bool = True, uniform_scale: bool = True
+) -> Image:
     """Get a position map from the given mesh.
 
     The positions are normalized and then mapped to the 8-bit range [0, 255].
@@ -319,25 +389,44 @@ def get_position_map(width: int, height: int, mesh: mops.Mesh, padding: int = 4)
     :param height: Height of the position map in pixels.
     :param mesh: The mesh to use for creating the position map.
     :param padding: Padding in pixels to add around the UV shells. Default 4.
+    :param center: Whether to compute the positions from the center of the mesh. Default True.
+    :param uniform_scale: Whether to scale the positions uniformly along each axis or independently for each axis.
+    Default True.
     :return: The position map as uint8.
     """
-    positions = mesh.vertices
-    # Since 8-bit images only store positive numbers up to 255, first normalize the positions to the range [0, 1].
-    positions = positions - positions.min(axis=0)
-    positions = positions / positions.max(axis=0)
-    # Map the normalized positions to the 8-bit color format.
-    positions = (positions * 255).astype(np.uint8)
-    # Create an image from the positions.
-    image_coords = mops.uv_to_image_coords(mesh.uv_coords, width, height)
-    triangle_coords = mops.get_faces_image_coords(mesh.faces, mesh.uv_coords, width, height)
-    pos_map = create_nan_image(width, height, ColorMode.RGB)
-    pos_map = rasterize(pos_map, mesh.edges, image_coords, positions, inplace=True)
-    # Constrain colored pixels to the UV shells.
-    mask = create_mask(width, height, triangle_coords).astype(bool)[:, :, np.newaxis].repeat(3, axis=2)
-    pos_map *= mask
-    # Add padding around the UV shells.
-    if padding > 0:
-        padded = maximum_filter(pos_map, size=padding, axes=[0, 1])
-        pos_map[~mask] = padded[~mask]
+    if center:
+        vertices = mesh.vertices - mesh.vertices.mean(axis=0)
+    else:
+        vertices = mesh.vertices
+    if uniform_scale:
+        vertices /= vertices.ptp()
+    else:
+        vertices /= vertices.ptp(axis=0)
+    return get_vertex_attribute_image(
+        width,
+        height,
+        mesh.faces,
+        mesh.uv_coords,
+        vertices,
+        padding=padding,
+        normalize_per_channel=not uniform_scale,  # Not really needed, because the positions are already normalized.
+    )
 
-    return pos_map.astype(np.uint8)
+
+def get_obj_space_normal_map(width: int, height: int, mesh: mops.Mesh, padding: int = 4) -> Image:
+    """Get an object space normal map from the given mesh.
+
+    The normals are mapped to the 8-bit integer range [0, 255] to be represented as colors.
+
+    :param width: Width of the normal map in pixels.
+    :param height: Height of the normal map in pixels.
+    :param mesh: The mesh to use for creating the normal map.
+    :param padding: Padding in pixels to add around the UV shells. Default 4.
+    :return: The object space normal map as uint8.
+    """
+    if mesh.normals is None:
+        msg = "Mesh does not have vertex normals."
+        raise ValueError(msg)
+    return get_vertex_attribute_image(
+        width, height, mesh.faces, mesh.uv_coords, mesh.normals, padding=padding, normalize_per_channel=False
+    )
