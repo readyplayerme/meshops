@@ -52,7 +52,8 @@ def read_gltf(filename: str | Path) -> Mesh:
     :return: The loaded mesh object.
     """
     try:
-        loaded: trimesh.Trimesh = trimesh.load(filename, process=False, force="mesh")
+        loaded = trimesh.load(filename, process=False, force="mesh")
+        assert isinstance(loaded, trimesh.Trimesh), "Loaded object is not a Trimesh."  # noqa: S101  # For type checker.
     except ValueError as error:
         msg = f"Error loading {filename}: {error}"
         raise OSError(msg) from error
