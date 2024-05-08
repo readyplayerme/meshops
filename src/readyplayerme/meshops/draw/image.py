@@ -324,7 +324,7 @@ def get_vertex_attribute_image(
     attribute: Color,
     padding: int = 4,
     *,
-    normalize_per_channel: bool = True,
+    normalize_per_channel: bool = False,
 ) -> Image:
     """Turn a vertex attribute into an image using a uv layout.
 
@@ -334,9 +334,10 @@ def get_vertex_attribute_image(
     :param height: Height of the image in pixels.
     :param faces: The faces of the mesh containing vertex indices.
     :param uvs: The UV coordinates for the vertices of the faces.
+    :param attribute: The attribute to convert to an image.
     :param padding: Padding in pixels to add around the UV shells. Default 4.
     :param normalize_per_channel: Whether to normalize each channel separately or across all channels.
-    Only if the attribute is not already uint8. Default True.
+    Only if the attribute is not already uint8. Default False.
     :return: The vertex attribute as an 8-bit image.
     """
     # Sanity checks.
@@ -377,7 +378,9 @@ def get_vertex_attribute_image(
     return attribute_img.astype(np.uint8)
 
 
-def get_position_map(width: int, height: int, mesh: mops.Mesh, padding: int = 4) -> Image:
+def get_position_map(
+    width: int, height: int, mesh: mops.Mesh, padding: int = 4, *, center: bool = True, uniform_scale: bool = True
+) -> Image:
     """Get a position map from the given mesh.
 
     The positions are normalized and then mapped to the 8-bit range [0, 255].
@@ -386,9 +389,28 @@ def get_position_map(width: int, height: int, mesh: mops.Mesh, padding: int = 4)
     :param height: Height of the position map in pixels.
     :param mesh: The mesh to use for creating the position map.
     :param padding: Padding in pixels to add around the UV shells. Default 4.
+    :param center: Whether to compute the positions from the center of the mesh. Default True.
+    :param uniform_scale: Whether to scale the positions uniformly along each axis or independently for each axis.
+    Default True.
     :return: The position map as uint8.
     """
-    return get_vertex_attribute_image(width, height, mesh.faces, mesh.uv_coords, mesh.vertices, padding=padding)
+    if center:
+        vertices = mesh.vertices - mesh.vertices.mean(axis=0)
+    else:
+        vertices = mesh.vertices
+    if uniform_scale:
+        vertices /= vertices.ptp()
+    else:
+        vertices /= vertices.ptp(axis=0)
+    return get_vertex_attribute_image(
+        width,
+        height,
+        mesh.faces,
+        mesh.uv_coords,
+        vertices,
+        padding=padding,
+        normalize_per_channel=not uniform_scale,  # Not really needed, because the positions are already normalized.
+    )
 
 
 def get_obj_space_normal_map(width: int, height: int, mesh: mops.Mesh, padding: int = 4) -> Image:
@@ -405,4 +427,6 @@ def get_obj_space_normal_map(width: int, height: int, mesh: mops.Mesh, padding: 
     if mesh.normals is None:
         msg = "Mesh does not have vertex normals."
         raise ValueError(msg)
-    return get_vertex_attribute_image(width, height, mesh.faces, mesh.uv_coords, mesh.normals, padding=padding)
+    return get_vertex_attribute_image(
+        width, height, mesh.faces, mesh.uv_coords, mesh.normals, padding=padding, normalize_per_channel=False
+    )
