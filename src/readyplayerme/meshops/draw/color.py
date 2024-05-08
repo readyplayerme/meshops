@@ -124,33 +124,44 @@ def interpolate_values(start: Color, end: Color, num_steps: int) -> Color:
         return start[None, :] + t[:, None] * (end - start)
 
 
-def attribute_to_color(attribute: npt.NDArray[Any], *, normalize_per_channel: bool = True) -> Color:
+def attribute_to_color(attribute: npt.NDArray[Any], *, normalize_per_channel: bool = False) -> Color:
     """Convert an attribute to color values.
 
-    If necessary, normalize it and convert it to uint8.
+    If necessary, remap to [0, 255] range as uint8.
 
     :param attribute: The attribute to turn into color values.
-    :param normalize_per_channel: Whether to normalize each channel separately or across all channels.
+    :param normalize_per_channel: Whether to remap each channel separately or across all channels.
     Only if the attribute is not already uint8.
     :return: The attribute as uint8 color values.
     """
+    attribute = np.nan_to_num(attribute)
     if attribute.ndim == 0:
         msg = "Attribute has 0 dimensions. Must at least be a scalar (1 dimension)."
         raise ValueError(msg)
     if attribute.size > 1:  # Do not squeeze a scalar, as it will get 0 dimensions.
         attribute = np.squeeze(attribute)
     # If the attribute has 2 values, like UV coordinates, add a third value to make it RGB.
-    dim2 = 2
-    if attribute.ndim == dim2 and attribute.shape[1] == dim2:
+    dims_2d = 2
+    if attribute.ndim == dims_2d and attribute.shape[1] == dims_2d:
         attribute = np.pad(attribute, ((0, 0), (0, 1)), mode="constant", constant_values=0)
-    # A color should not have more than 4 channels, but we don't enforce it here.
+    # Now check if we're actually dealing with colors.
+    try:
+        _ = get_color_mode(attribute)
+    except ValueError:
+        raise
     # Normalize the attribute.
     if attribute.dtype != np.uint8:
         axis = 0 if normalize_per_channel else None
-        colors = np.nan_to_num(
-            (attribute - attribute.min(axis=axis, keepdims=True))
-            / (np.ptp(attribute, axis=axis, keepdims=True) + 1e-7)  # Small constant to avoid division by zero.
-        )
+        # If the attribute range is below 1, keep 1 as the maximum. Also avoids division by 0.
+        attribute_range = np.maximum(np.absolute(attribute).max(axis=axis, keepdims=True), 1)
+        colors = attribute / attribute_range
+        # If the minimum is less than 0, shift the array into the [0, 1] range.
+        column_mask = colors.min(axis=axis) < 0
+        if column_mask.any():
+            if axis is None:
+                colors = (colors + 1) * 0.5
+            elif axis == 0:
+                colors[:, column_mask] = (colors[:, column_mask] + 1) * 0.5
         colors = skimage.util.img_as_ubyte(colors)
     else:
         colors = attribute

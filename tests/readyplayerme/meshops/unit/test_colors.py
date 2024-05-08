@@ -210,49 +210,79 @@ def test_interpolate_values_should_fail(start_color, end_color, num_steps, expec
 @pytest.mark.parametrize(
     "attribute, per_channel_normalization, expected",
     [
-        # Test with single scalar attribute.
+        # single scalar attribute.
         (np.array([-5]), False, np.array([0], dtype=np.uint8)),
-        # Test with uint8 scalar attribute.
+        # uint8 scalar attribute.
         (
             np.array([128, 64, 192], dtype=np.uint8),
             False,
             np.array([128, 64, 192], dtype=np.uint8),
         ),
-        # Test with uint8 "1.5D" attribute.
+        # uint8 "1.5D" attribute.
         (
             np.array([[128], [64], [192]], dtype=np.uint8),
             False,
             np.array([128, 64, 192], dtype=np.uint8),
         ),
-        # Test with uint8 2D attribute.
+        # uint8 2D attribute.
         (
             np.array([[128, 192], [64, 32]], dtype=np.uint8),
             False,
             np.array([[128, 192, 0], [64, 32, 0]], dtype=np.uint8),
         ),
-        # Test with uint8 RGBA attribute.
+        # uint8 RGBA attribute.
         (
             np.array([[128, 64, 192, 32], [100, 150, 200, 50]], dtype=np.uint8),
             False,
             np.array([[128, 64, 192, 32], [100, 150, 200, 50]], dtype=np.uint8),
         ),
-        # Test with int32 RGB attribute and per_channel_normalization=True
+        # int32 RGB attribute and per_channel_normalization=True
         (
             np.array([[200, 0, 500], [-200, 0, 250], [100, 0, 0]], dtype=np.int32),
             True,
-            np.array([[255, 0, 255], [0, 0, 127], [191, 0, 0]], dtype=np.uint8),
+            np.array([[255, 0, 255], [0, 0, 128], [191, 0, 0]], dtype=np.uint8),
         ),
-        # Test with float32 attribute and per_channel_normalization=True
+        # int32 RGB attribute and per_channel_normalization=False
+        (
+            np.array([[200, 0, 500], [-200, 0, 250], [100, 0, 0]], dtype=np.int32),
+            False,
+            np.array([[178, 128, 255], [76, 128, 191], [153, 128, 128]], dtype=np.uint8),
+        ),
+        # float32 attribute and per_channel_normalization=True
         (
             np.array([[-2.0, 0.0, 0.0, 0.5], [0.0, 1.0, 0.0, 0.5], [0.0, 0.0, 1.0, 0.5]]),
             True,
-            np.array([[0, 0, 0, 0], [255, 255, 0, 0], [255, 0, 255, 0]], dtype=np.uint8),
+            np.array([[0, 0, 0, 128], [128, 255, 0, 128], [128, 0, 255, 128]], dtype=np.uint8),
         ),
-        # Test with float32 attribute and per_channel_normalization=False
+        # float32 attribute and per_channel_normalization=False
         (
             np.array([[-2.0, 0.0, 0.0, 0.5], [0.0, 1.0, 0.0, 0.5], [0.0, 0.0, 1.0, 0.5]]),
             False,
-            np.array([[0, 170, 170, 212], [170, 255, 170, 212], [170, 170, 255, 212]], dtype=np.uint8),
+            np.array([[0, 128, 128, 159], [128, 191, 128, 159], [128, 128, 191, 159]], dtype=np.uint8),
+        ),
+        # 3D with 1 channel -> squeezed to (2, 3)
+        (
+            np.array([[[1], [2]], [[3], [4]]], dtype=np.uint8),
+            False,
+            np.array([[1, 2, 0], [3, 4, 0]], dtype=np.uint8),
+        ),
+        # 1 NAN value
+        (
+            np.array([[np.nan, 0, 0], [0, 1, 0], [0, 0, 1]]),
+            True,
+            np.array([[0, 0, 0], [0, 255, 0], [0, 0, 255]], dtype=np.uint8),
+        ),
+        # All NAN values
+        (
+            np.array([[np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan]]),
+            True,
+            np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]], dtype=np.uint8),
+        ),
+        # infinities
+        (
+            np.array([[np.inf, 0, 0], [0, -np.inf, 0], [0, 0, np.inf]]),
+            True,
+            np.array([[255, 128, 0], [0, 0, 0], [0, 128, 255]], dtype=np.uint8),
         ),
     ],
     ids=[
@@ -261,9 +291,14 @@ def test_interpolate_values_should_fail(start_color, end_color, num_steps, expec
         "uint8 1.5D",
         "uint8 2D",
         "uint8 RGBA",
-        "int32 RGB",
+        "int32 RGB, normalize per channel",
+        "int32 RGB, normalize globally",
         "float32 RGBA per channel",
         "float32 RGBA global",
+        "3D with 1 channel",
+        "1 NAN value",
+        "all NAN values",
+        "infinities",
     ],
 )
 def test_attribute_to_color(attribute, per_channel_normalization, expected):
@@ -277,12 +312,16 @@ def test_attribute_to_color(attribute, per_channel_normalization, expected):
 @pytest.mark.parametrize(
     "attribute",
     [
-        # Test with empty attribute
+        # Empty attribute
         np.array([]),
-        # Test with 0-dimensional attribute
+        # 0-dimensional attribute
         np.array(5),
+        # 2D with 5 channels
+        np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]),
+        # 3D with 2 channels
+        np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]),
     ],
-    ids=["empty", "0-dimensional attribute"],
+    ids=["empty", "0-dimensional attribute", "2D with 5 channels", "3D with 2 channels"],
 )
 def test_attribute_to_color_should_fail(attribute):
     """Test the attribute_to_color function with invalid inputs."""
