@@ -153,7 +153,7 @@ def test_faces_to_edges(mock_mesh: mesh.Mesh):
         (np.array([[0.5, 0.5], [0.25, 0.75]]), 100, 100, np.array([0]), np.array([[49, 49]])),
         # Full range UV conversion without specific indices
         (np.array([[0.0, 0.0], [1.0, 1.0]]), 200, 200, None, np.array([[0, 199], [199, 0]])),
-        # Near 0 and 1 values
+        # Near 0 and 1 UVs
         (
             np.array([[0.0001, 0.9999], [0.9999, 0.0001]]),
             200,
@@ -161,8 +161,8 @@ def test_faces_to_edges(mock_mesh: mesh.Mesh):
             np.array([0, 1]),
             np.array([[0, 0], [199, 199]]),
         ),
-        # Empty indices
-        (np.array([[0.5, 0.5], [0.25, 0.75]]), 50, 50, np.array([], dtype=np.uint8), np.empty((0, 2))),  # FixMe
+        # Empty indices- give me coordinates of no UVs -> no image space coordinates
+        (np.array([[0.5, 0.5], [0.25, 0.75]]), 50, 50, np.array([], dtype=np.uint8), np.empty((0, 2))),
         # UV coordinates out of range  (non square tex - negative values)
         (np.array([[-0.5, 1.5], [1.0, -1.0]]), 10, 100, np.array([0, 1]), np.array([[4, 49], [9, 99]])),
         # UV coordinates out of range (wrapped - negative values)
@@ -175,10 +175,10 @@ def test_faces_to_edges(mock_mesh: mesh.Mesh):
         (np.array([[0.5, 0.5], [0.25, 0.75]]), 0, 0, np.array([0]), np.array([[0, 0]])),
     ],
     ids=[
-        "simple UV conversion",
-        "full range UV conversion",
-        "near 0 and 1 values",
-        "empty indices",
+        "with indices",
+        "without indices (None)",
+        "near 0 and 1 UVs",
+        "empty indices []",
         "out of range UV",
         "wrapped UV",
         "non square UV",
@@ -187,7 +187,7 @@ def test_faces_to_edges(mock_mesh: mesh.Mesh):
     ],
 )
 def test_uv_to_image_coords(uvs: UVs, width: int, height: int, indices: Indices, expected: PixelCoord):
-    """Test the uv_to_texture_space function returns the correct texture space coordinates."""
+    """Test that the uv_to_image_coords function returns the correct texture space coordinates."""
     image_space_coords = mesh.uv_to_image_coords(uvs, width, height, indices)
     np.testing.assert_array_equal(image_space_coords, expected, "Image space coordinates do not match expected values.")
 
