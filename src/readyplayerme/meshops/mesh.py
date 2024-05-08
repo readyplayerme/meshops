@@ -52,7 +52,7 @@ def read_gltf(filename: str | Path) -> Mesh:
     :return: The loaded mesh object.
     """
     try:
-        loaded = trimesh.load(filename, process=False, force="mesh")
+        loaded: trimesh.Trimesh = trimesh.load(filename, process=False, force="mesh")
     except ValueError as error:
         msg = f"Error loading {filename}: {error}"
         raise OSError(msg) from error
