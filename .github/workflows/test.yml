@@ -52,9 +52,11 @@ jobs:
         cp -r tests/.coverage artifact/.coverage
 
     - name: Upload performance & coverage report artifact
-      uses: actions/upload-artifact@v3
+      # Only upload the artifact for the first (most recent supported) Python version in the matrix.
+      if: matrix.python-version == matrix.python-version[0]
+      uses: actions/upload-artifact@v4
       with:
-        name: coverage-profiling
+        name: coverage-profiling-${{ matrix.os }}-Py${{ matrix.python-version }}
         path: artifact
         if-no-files-found: error
 
