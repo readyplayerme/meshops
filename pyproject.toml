@@ -9,14 +9,24 @@ description = "This package provides means to help with mesh processing and some
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
-keywords = ["ready player me", "gltf", "3D", "mesh", "texture", "texture mapping", "uv mapping", "uv", "uv seam", "uv border",]
+keywords = [
+  "ready player me",
+  "gltf",
+  "3D",
+  "mesh",
+  "texture",
+  "texture mapping",
+  "uv mapping",
+  "uv",
+  "uv seam",
+  "uv border",
+]
 authors = [
   { name = "Ready Player Me", email = "info@readyplayer.me" },
-]
-maintainers = [
-  { name = "Daniel-Ionut Rancea", email = "daniel-ionut.rancea@readyplayer.me" },
   { name = "Olaf Haag", email = "olaf@readyplayer.me" },
+  { name = "Daniel-Ionut Rancea" },
 ]
+maintainers = [{ name = "Olaf Haag", email = "olaf@readyplayer.me" }]
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "License :: OSI Approved :: MIT License",
@@ -25,30 +35,12 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Topic :: Multimedia :: Graphics",
-  "Topic :: Multimedia :: Graphics :: 3D Modeling"
+  "Topic :: Multimedia :: Graphics :: 3D Modeling",
 ]
-dependencies = [
-  "trimesh[recommend]>=4.0.1",
-  "pillow",
-  "scipy",
-]
+dependencies = ["trimesh[recommend]>=4.0.1", "pillow", "scipy"]
 
 [project.optional-dependencies]
-test = [
-  "pytest",
-  "pytest-xdist",
-  "coverage[toml]>=6.5",
-  "pyinstrument",
-]
-lint = [
-  "black==24.4.2",
-  "mypy==1.10.0",
-  "ruff==0.4.3",
-]
-dev = [
-  "readyplayerme.meshops[test, lint]",
-  "pre-commit",
-]
+dev = ["pre-commit"]
 
 [project.urls]
 Documentation = "https://github.com/readyplayerme/meshops#readme"
@@ -62,74 +54,59 @@ path = "src/readyplayerme/meshops/__about__.py"
 packages = ["src/readyplayerme"]
 
 [tool.hatch.envs.default]
+installer = "uv"
 description = "Python virtual environment in project dir to quickly get up and running in an IDE like VSCode."
 type = "virtual"
-path = ".venv"
-features = [
-  "dev",
-]
-post-install-commands = [
-  "install-precommit",
-]
+features = ["dev"]
+post-install-commands = ["install-precommit"]
 
 [tool.hatch.envs.default.scripts]
 install-precommit = "pre-commit install --overwrite -t pre-commit -t commit-msg -t pre-push"
-test = "pytest {args:tests}"
-test-cov = "coverage run -m pytest {args:tests}"
-cov-report = [
-  "- coverage combine",
-  "coverage report",
-  "coverage html -d ./tests/.coverage",
-]
-cov = [
-  "test-cov",
-  "cov-report",
-]
-typing = "mypy --install-types --non-interactive {args:src/readyplayerme/meshops tests}"
-style = [
-  "ruff check {args:.}",
-  "black --check --diff {args:.}",
-]
-fmt = [
-  "black {args:.}",
-  "ruff --fix {args:.}",
-  "style",
-]
-all = [
-  "style",
-  "typing",
-  "cov",
-]
 
-[tool.hatch.envs.lint]
-description = "Python virtual environment to be used in CI to run linting and type checking."
-# Note: This still inherits the path from the default env, so it will use the same venv.
-features = [
-  "lint",
-]
+[tool.hatch.envs.hatch-test]
+extra-dependencies = ["pyinstrument"]
+randomize = true
+parallel = true
+retries = 2
+retry-delay = 1
+
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.12", "3.11", "3.10"]
+
+[tool.hatch.envs.hatch-test.scripts]
+run = "pytest{env:HATCH_TEST_ARGS:} {args}"
+run-cov = "coverage run -m pytest{env:HATCH_TEST_ARGS:} {args}"
+cov-combine = "coverage combine"
+cov-html = "coverage html -d ./tests/.coverage"
+cov-report = ["coverage report", "cov-html"]
+
+[tool.hatch.envs.hatch-test.extra-scripts]
+pip = "{env:HATCH_UV} pip {args}"
+
+[tool.hatch.envs.hatch-static-analysis]
+dependencies = ["ruff==0.4.4"]
+# Disable the hatch's default config and use the one from the project.
+config-path = "none"
+
+[tool.hatch.envs.types]
+extra-dependencies = ["mypy==1.10.0", "pytest"]
+installer = "uv"
 post-install-commands = []
 
-[tool.hatch.envs.test]
-description = "Python virtual environment to be used in CI to run tests."
-# Note: This still inherits the path from the default env, so it will use the same venv.
-features = [
-  "test",
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/readyplayerme/meshops tests}"
+
+# Workaround for mypy using pip instead of uv, to avoid "pip not found" error.
+[[tool.hatch.envs.types.matrix]]
+tool = ["uv"]
+
+[tool.hatch.envs.types.overrides]
+matrix.tool.installer = { value = "{matrix:tool}" }
+matrix.tool.scripts = [
+  { key = "pip", value = "{env:HATCH_UV} pip {args}", if = ["uv"] },
 ]
-post-install-commands = []
-
-[[tool.hatch.envs.all.matrix]]
-python = ["3.10", "3.11"]
-
-[tool.pytest.ini_options]
-#addopts="-n auto"
-
-[tool.black]
-target-version = ["py310", "py311"]
-line-length = 120
-skip-string-normalization = false
 
 [tool.ruff]
-target-version = "py311"
 line-length = 120
 builtins = ["_"]
 
@@ -173,13 +150,28 @@ ignore = [
   # Allow boolean positional values in function calls, like `dict.get(... True)`
   "FBT003",
   # Allow try-except-pass & try-except-continue
-  "S110", "S112",
+  "S110",
+  "S112",
   # Ignore complexity
-  "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+  "C901",
+  "PLR0911",
+  "PLR0912",
+  "PLR0913",
+  "PLR0915",
   # Exclude self, cls, args, kwargs from annotation, allow dynamically typed expressions (typing.Any) in type annotations
-  "ANN101", "ANN102", "ANN002", "ANN003", "ANN401",
+  "ANN101",
+  "ANN102",
+  "ANN002",
+  "ANN003",
+  "ANN401",
   # Don't require documentation for every function parameter and magic methods.
-  "D417", "D102", "D105", "D107", "D100"
+  "D417",
+  "D102",
+  "D105",
+  "D107",
+  "D100",
+  # hatch recommends to ignore implicitly concatenated strings on a single line to avoid conflicts with the formatter.
+  "ISC001",
 ]
 unfixable = [
   # Don't touch unused imports
@@ -187,27 +179,27 @@ unfixable = [
 ]
 # Exclude a variety of commonly ignored directories.
 exclude = [
-    ".bzr",
-    ".direnv",
-    ".eggs",
-    ".git",
-    ".git-rewrite",
-    ".hg",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".pytype",
-    ".ruff_cache",
-    ".svn",
-    ".tox",
-    ".venv",
-    "__pypackages__",
-    "_build",
-    "buck-out",
-    "build",
-    "dist",
-    "node_modules",
-    "venv",
+  ".bzr",
+  ".direnv",
+  ".eggs",
+  ".git",
+  ".git-rewrite",
+  ".hg",
+  ".mypy_cache",
+  ".nox",
+  ".pants.d",
+  ".pytype",
+  ".ruff_cache",
+  ".svn",
+  ".tox",
+  ".venv",
+  "__pypackages__",
+  "_build",
+  "buck-out",
+  "build",
+  "dist",
+  "node_modules",
+  "venv",
 ]
 
 [tool.ruff.lint.isort]
@@ -271,17 +263,11 @@ ignore_missing_imports = true
 source_pkgs = ["readyplayerme", "readyplayerme.meshops"]
 branch = true
 parallel = true
-omit = [
-  "src/readyplayerme/*/__about__.py",
-]
+omit = ["src/readyplayerme/*/__about__.py"]
 
 [tool.coverage.paths]
 coverage_debugging = ["src/readyplayerme", "*/meshops/src/readyplayerme"]
 
 [tool.coverage.report]
 include_namespace_packages = true
-exclude_lines = [
-  "no cov",
-  "if __name__ == .__main__.:",
-  "if TYPE_CHECKING:",
-]
+exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]

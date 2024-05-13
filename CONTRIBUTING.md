@@ -43,10 +43,10 @@ The [`good first issue` label](https://github.com/readyplayerme/meshops/issues?q
 It's best to use a separate Python _environment_ for development to avoid conflicts with other Python projects and keep your system Python clean. In this section we'll provide instructions on how to set up such an environment for the project.
 
 We use [hatch](https://hatch.pypa.io/) as the Python package build backend and Python project manager.
-We recommend to install it as it will provide you with a project-specific development environment. However, using hatch is not a necessity, but more of a convenience.  
+We recommend to install it as it will provide you with a project-specific development environment, including the required Python version as a virtual environment. However, using hatch is not a necessity, but more of a convenience.  
 
 1. You can read [hatch's installation instructions](https://hatch.pypa.io/latest/install/) for information on how to install it on your system.
-Since version 1.8.0, hatch is available as pre-built binaries and can install the required Python version as a virtual environment.
+You should get at least hatch **v1.10.0**.
 
 2. Prepare the environment for development.
     Once you have setup hatch, navigate to the cloned repository, and execute:
@@ -55,8 +55,8 @@ Since version 1.8.0, hatch is available as pre-built binaries and can install th
     hatch env create
     ```
 
-    This will create yet a new environment within a `.venv` folder of the project and install the development dependencies into it.
-    An IDE like [Visual Studio Code](https://code.visualstudio.com/) will automatically detect this environment and suggest to you to use it as the Python interpreter for this repository.
+    This will create a new virtual environment for development and install the development dependencies into it.
+    An IDE like [Visual Studio Code](https://code.visualstudio.com/) can [detect hatch environments](https://hatch.pypa.io/latest/how-to/integrate/vscode/) for you to use it as the Python interpreter for this repository.
     It also installs [pre-commit](https://pre-commit.com/) hooks into the repository, which will run linting and formatting checks before you commit your changes.
 
     Alternatively, you can get the new environment path and add it to your IDE as a Python interpreter for this repository with:
@@ -68,7 +68,7 @@ Since version 1.8.0, hatch is available as pre-built binaries and can install th
     If you decided against using hatch, we still recommend installing the pre-commit hooks.
 
     ```powershell
-    pre-commit install -t pre-commit -t commit-msg -t pre-push
+    pre-commit install --overwrite -t pre-commit -t commit-msg -t pre-push
     ```
 
 ### Branch Off & Make Your Changes
@@ -79,7 +79,7 @@ Since version 1.8.0, hatch is available as pre-built binaries and can install th
 
 2. Write or update tests for your changes. <!-- TODO Explain how we do tests -->
 
-3. Run tests with `hatch run test` and or run linting & formatting and tests with `hatch run all` locally.
+3. Run tests with `hatch test --cover` and or run linting & formatting and tests with `hatch fmt` locally, as well as `hatch run types:check` for static type checking.
 
 ### Commit your update
 
