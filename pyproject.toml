@@ -107,7 +107,6 @@ matrix.tool.scripts = [
 ]
 
 [tool.ruff]
-target-version = "py312"
 line-length = 120
 builtins = ["_"]
 
