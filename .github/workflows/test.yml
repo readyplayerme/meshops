@@ -53,7 +53,7 @@ jobs:
 
     - name: Upload performance & coverage report artifact
       # Only upload the artifact for the first (most recent supported) Python version in the matrix.
-      if: matrix.python-version == matrix.python-version[0]
+      if: strategy.job-index == 0
       uses: actions/upload-artifact@v4
       with:
         name: coverage-profiling-${{ matrix.os }}-Py${{ matrix.python-version }}
