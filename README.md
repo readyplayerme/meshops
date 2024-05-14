@@ -2,7 +2,27 @@
 
 A collection of tools for dealing with mesh related data.
 
-## Setup
+## Installation
+
+To install a specific version  of `readyplayerme-meshops` directly from github:
+
+```bash
+pip install "ReadyPlayerMe-MeshOps@https://github.com/readyplayerme/meshops/releases/download/0.1.0/readyplayerme_meshops-0.1.0-py3-none-any.whl"
+```
+
+You need to change the tag (0.1.0 in this example) to the version you want to install.
+
+Alternatively, you can also download the latest wheel file from the [Releases](https://github.com/readyplayerme/meshops/releases/latest) and install it using pip:
+
+1. Navigate to the [Releases](https://github.com/<username>/meshops/releases) page of the `meshops` GitHub repository.
+2. Download the latest `.whl` file.
+3. Install the wheel file using pip, e.g.:
+
+```bash
+pip install <path-to-download>/readyplayerme_meshops-0.1.0-py3-none-any.whl
+```
+
+## Development Setup
 
 You'll find setup instruction of this project in the [CONTRIBUTING.md](https://github.com/readyplayerme/meshops/blob/main/CONTRIBUTING.md) file.
 
