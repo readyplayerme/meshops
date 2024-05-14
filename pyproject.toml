@@ -50,7 +50,8 @@ Source = "https://github.com/readyplayerme/meshops"
 [tool.hatch.version]
 path = "src/readyplayerme/meshops/__about__.py"
 
-[tool.hatch.build.targets.wheel]
+[tool.hatch.build]
+sources = ["src"]
 packages = ["src/readyplayerme"]
 
 [tool.hatch.envs.default]
