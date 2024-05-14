@@ -37,7 +37,8 @@ classifiers = [
   "Topic :: Multimedia :: Graphics",
   "Topic :: Multimedia :: Graphics :: 3D Modeling",
 ]
-dependencies = ["trimesh[recommend]>=4.0.1", "pillow", "scipy"]
+# trimesh up to v4.3.2 has an error with numpy 2.0 ptp during mesh load.
+dependencies = ["numpy>=1.20.0,<2.0.0", "trimesh[recommend]>=4.0.1", "pillow", "scipy"]
 
 [project.optional-dependencies]
 dev = ["pre-commit"]
