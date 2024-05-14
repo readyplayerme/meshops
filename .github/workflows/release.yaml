@@ -1,0 +1,37 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+    branches:
+      - main
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install hatch
+        run: pip install hatch
+
+      - name: Build artifacts
+        run: hatch build
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ./dist/*.whl
+            ./dist/*.tar.gz
+          name: ${{ github.repository_owner }}/${{ github.repository }} ${{ github.ref }}
+          draft: true
+          prerelease: ${{ contains(github.ref, '-') }}
+          generate_release_notes: true
