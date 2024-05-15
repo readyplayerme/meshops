@@ -14,7 +14,7 @@ You need to change the tag (0.1.0 in this example) to the version you want to in
 
 Alternatively, you can also download the latest wheel file from the [Releases](https://github.com/readyplayerme/meshops/releases/latest) and install it using pip:
 
-1. Navigate to the [Releases](https://github.com/<username>/meshops/releases) page of the `meshops` GitHub repository.
+1. Navigate to the [Releases](https://github.com/readyplayerme/meshops/releases/) page of the `meshops` GitHub repository.
 2. Download the latest `.whl` file.
 3. Install the wheel file using pip, e.g.:
 
